@@ -14,7 +14,7 @@ Filtering of counts matrix (to excluding noncoding transcripts and/or oscillatin
 
 Running default DE analysis (excluding noncoding and oscilating genes) was carried out with ***./nf_differentialabundance.sh***
 
-Alternatively, [RAPToR](https://github.com/LBMC/RAPToR/tree/master) can be run on the samples to determine developmental age and then DESeq2 is run manually with the ***./raptor_deseq2.R*** script.
+Alternatively, [RAPToR](https://github.com/LBMC/RAPToR/tree/master) can be run on the samples to determine developmental age and then DESeq2 is run on the data using the age as a covariate with the ***./raptor_deseq2.R*** script.
 
 ## Custom plots
 
