@@ -8,7 +8,7 @@ Initial alignment to genome/transcriptome carried out with ***./nf_rnaseq_submit
 
 ## Differential expression analysis
 
-Results of DE analysis are each placed into a different subdirectory given by the `runName paramter`, in order to allow exploration of filtering parameters.
+Results of DE analysis are each placed into a different subdirectory given by the `runName` paramter, in order to allow exploration of filtering parameters.
 
 Filtering of counts matrix (to excluding noncoding transcripts and/or oscillating genes) was carried out with ***./filterCountsMatrix.R***
 
