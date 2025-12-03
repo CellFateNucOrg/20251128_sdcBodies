@@ -23,37 +23,39 @@ theme_set(
     )
 )
 
-serverPath="/Volumes/external.data/MeisterLab"
+source("./variables.R")
+
+#serverPath="/Volumes/external.data/MeisterLab"
 #serverPath="Z:/MeisterLab"
-workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
-minAbund=10
-minSamples=16
+#workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
+#minAbund=10
+#minSamples=16
 #runName=paste0("/res11_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor")
 #runName=paste0("/res12_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor")
 #runName=paste0("/res13_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
 #runName=paste0("/res14_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
-runName=paste0("/res19_no1298IPB2_lowInput_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
+#runName=paste0("/res19_no1298IPB2_lowInput_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
+#runName=paste0("/res20_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
+#prefix=""
+#genomeVer<-"WS295"
 
-prefix=""
-genomeVer<-"WS295"
-
-setwd(workDir)
+#setwd(workDir)
 
 source(paste0(workDir,"/raptor_functions.R"))
 col.palette1 <- c('grey20', 'firebrick', 'royalblue', 'forestgreen')
 #mapMethod="salmon"
 #prefix=paste0(mapMethod,"_raptor_age_deseq2_pc_nomito_lfcShrink_")
 
-contrasts<-read.csv(paste0(workDir,"/contrasts_compareLI.csv"),sep=",",header=T)
+#contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
 
-counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.bulk_plus_lowinput.protein_coding.tsv"))
-tpm<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.bulk_plus_lowinput.tsv"))
-
-
-ss<-read.csv(paste0(workDir,"/fileList_extended_compareLI.csv"), header=T, stringsAsFactors = T)
+#counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.protein_coding.tsv"))
+#tpm<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.tsv"))
 
 
-idx<-which(colnames(counts) %in% ss$sample)
+#sampleSheet<-read.csv(paste0(workDir,"/fileList_extended_no1298IPB2.csv"), header=T, stringsAsFactors = T)
+
+
+idx<-which(colnames(counts) %in% sampleSheet$sample)
 counts<-counts[,c(1,2,idx)]
 tpm<-tpm[,c(1,2,idx)]
 
@@ -72,13 +74,13 @@ dir.create(paste0(workDir,runName,"/plots"), recursive=T, showWarnings = FALSE)
 
 dir.create(paste0(workDir,runName,"/tables/differential"), recursive=T, showWarnings = FALSE)
 
-gtf<-import(paste0(serverPath,"/publicData/genomes/",genomeVer,"/c_elegans.PRJNA13758.",genomeVer,".canonical_geneset.protein_coding.gtf"))
+#gtf<-import(paste0(serverPath,"/publicData/genomes/",genomeVer,"/c_elegans.PRJNA13758.",genomeVer,".canonical_geneset.protein_coding.gtf"))
 
 
 # load reference
 ref <- prepare_refdata("Cel_larval", "wormRef", 600)
 
-#pdat<-ss[,c("sample","genotype","strain","group","replicate","group")]
+#pdat<-sampleSheet[,c("sample","genotype","strain","group","replicate","group")]
 
 qs=list()
 
@@ -95,8 +97,8 @@ row.names(X)<-tpm$gene_id
 colnames(X)<-gsub("^X","",colnames(X))
 qs$tpm<-X
 
-pdatOrder<-match(colnames(X),ss$sample)
-qs$pdat<-ss[pdatOrder,]
+pdatOrder<-match(colnames(X),sampleSheet$sample)
+qs$pdat<-sampleSheet[pdatOrder,]
 
 str(qs$pdat)
 qs$pdat$group<-factor(qs$pdat$group)
@@ -193,3 +195,9 @@ ggsave(paste0(workDir,runName,"/plots/",prefix,"_PCA.pdf"),p,height=29, width=19
 file.copy(from=paste0(workDir,"/raptor_deseq2.R"),
           to=paste0(workDir,runName,"/raptor_deseq2.R"),
           overwrite=TRUE)
+
+file.copy(from=paste0(workDir,"/variables.R"),
+          to=paste0(workDir,runName,"/variables.R"),
+          overwrite=TRUE)
+
+devtools::session_info(to_file=paste0(workDir,runName,"/logs/sessionInfo_raptor_deseq2.txt"))

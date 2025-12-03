@@ -30,8 +30,9 @@ workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
 #runName="/res15_no1298IPB2_LowInput_minAbun10_minSamples9_pc_noOsc_noShrink"
 #runName="/res16_no1298IPB2_LowInput_minAbun10_minSamples9_pc_noOsc"
 #runName="/res17_no1298IPB2_lowInput_minAbund10_minSamples9_pc_raptor_noShrink"
-runName="/res18_no1298IPB2_LowInput_minAbun10_minSamples16_pc_noOsc_noShrink"
+#runName="/res18_no1298IPB2_LowInput_minAbun10_minSamples16_pc_noOsc_noShrink"
 #runName="/res19_no1298IPB2_lowInput_minAbund10_minSamples16_pc_raptor_noShrink"
+runName="/res20_no1298IPB2_minAbund10_minSamples16_pc_raptor_noShrink"
 prefix=""
 
 setwd(workDir)
