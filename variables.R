@@ -87,6 +87,13 @@ countsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
 log4r::info(file_logger, paste0("counts file: ",countsFile))
 #counts<-read.delim(countsFile)
 
+## lengths file
+lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths",
+                   ifelse(samples=="allSamples","",paste0(".",samples)),
+                   ".tsv")
+log4r::info(file_logger, paste0("lengths file: ",lengthsFile))
+#lengths<-read.delim(lengthsFile)
+
 
 ## tpm file
 if(samples=="no1298IPB2_lowInput"){
