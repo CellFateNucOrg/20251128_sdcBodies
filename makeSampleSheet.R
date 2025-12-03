@@ -27,7 +27,6 @@ df$condition<-sapply(strsplit(as.character(df$sample),"_"), "[[", 2)
 df$group<-paste0(df$strain,"_",df$condition)
 df$replicate<-sapply(strsplit(as.character(df$sample),"_"), "[[", 3)
 df
-
 write.csv(df,file=paste0(workDir,"/fileList_",samples,".csv"),quote=F,row.names=F)
 
 

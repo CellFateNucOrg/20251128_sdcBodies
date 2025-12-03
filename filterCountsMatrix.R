@@ -5,7 +5,7 @@ library(BSgenome.Celegans.UCSC.ce11)
 
 source("./variables.R")
 #genomeVer<-"WS295"
-
+gtf<-import(gtfFile)
 length(gtf)
 table(gtf$type)
 table(gtf$gene_biotype)
@@ -13,14 +13,22 @@ table(seqnames(gtf))
 
 # protein coding only
 #pc<-import(paste0(serverPath,"/publicData/genomes/",genomeVer,"/c_elegans.PRJNA13758.",genomeVer,".canonical_geneset.protein_coding.gtf"))
-if(samples=="no1298IPB2_lowInput"){
-  counts<- read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.",samples,".tsv"))
-} else {
-  counts<- read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
+
+counts<-read.delim(countsFile)
+dim(counts)
+if(filterNoncoding){
+  counts<-counts[counts$gene_id %in% gtf$gene_id,]
+  dim(counts)
 }
-dim(counts)
-counts<-counts[counts$gene_id %in% gtf$gene_id,]
-dim(counts)
+
+if(filterMitochondrial){
+  idx<-seqnames(gtf)=="MtDNA"
+  if(sum(idx)>0){
+    mitoGenes<-gtf$gene_id[idx]
+    counts<-counts[!counts$gene_id %in% mitoGenes,]
+  }
+  dim(counts)
+}
 #write.table(counts,paste0(workDir,"/star_salmon/salmon.merged.gene_counts_noRR_noSP.tsv"),sep="\t",row.names=F,quote=F)
 write.table(counts,paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
                           ifelse(filterNoncoding,".protein_coding",""),
