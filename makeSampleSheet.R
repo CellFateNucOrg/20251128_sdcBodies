@@ -15,7 +15,7 @@ df$sample<-gsub("W98","PWM1298",df$sample)
 df$sample<-gsub("_IP_","_IPTG_",df$sample)
 df$sample<-gsub("_NO_","_Bound_",df$sample)
 
-  df$sample
+df$sample
 
 write.csv(df,file="fileList.csv",quote=F,row.names=F)
 
@@ -64,7 +64,7 @@ contrasts$blocking<-paste0("seqType;",contrasts$blocking)
 write.csv(contrasts,file="contrasts_compareLI.csv",quote=F,row.names=F)
 
 # combine counts
-bulk_len<-read.csv("./star_salmon/salmon.merged.gene_counts.tsv",sep="\t")
+bulk_cnts<-read.csv("./star_salmon/salmon.merged.gene_counts.tsv",sep="\t")
 
 lowinput_cnts<-read.csv("/Volumes/external.data/MeisterLab/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_counts.tsv",sep="\t")
 
