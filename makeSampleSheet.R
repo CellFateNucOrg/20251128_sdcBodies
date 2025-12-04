@@ -45,10 +45,12 @@ contrasts<-data.frame(id=c("PMW1001_Bound_vs_IPTG",
 write.csv(contrasts,file=paste0(workDir,"/contrasts.csv"),quote=F,row.names=F)
 
 
+
 # removing 1298_IP_B2 -----
 samples="no1298IPB2"
 ss<-read.csv(paste0(workDir,"/fileList_allSamples.csv"))
 ss<-ss[ss$sample!="PMW1298_IPTG_B2",]
+dim(ss)
 write.csv(ss,file=paste0(workDir,"/fileList_",samples,".csv"),quote=F,row.names=F)
 
 ## NOTE: as long as sample sheet has correct samples, you do not need to filter count/length/tpm matrix columns
@@ -82,13 +84,12 @@ lowinput_cnts_filt<-lowinput_cnts[keep,]
 cnts<-cbind(bulk_cnts,lowinput_cnts_filt[3:ncol(lowinput_cnts_filt)])
 dim(cnts)
 write.table(cnts,file=paste0(workDir,"/star_salmon/salmon.merged.gene_counts.",samples,".tsv"),sep="\t",row.names=F,quote=F)
-
+print(paste0("writing ",workDir,"/star_salmon/salmon.merged.gene_counts.",samples,".tsv"))
 
 # combine gene lengths
 bulk_len<-read.csv(paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.tsv"),sep="\t")
 
 lowinput_len<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_lengths.tsv"),sep="\t")
-
 
 keep<-lowinput_len$gene_id %in% bulk_len$gene_id
 lowinput_len_filt<-lowinput_len[keep,]
@@ -96,6 +97,7 @@ lowinput_len_filt<-lowinput_len[keep,]
 len<-cbind(bulk_len,lowinput_len_filt[3:ncol(lowinput_len_filt)])
 dim(len)
 write.table(len,file=paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.",samples,".tsv"),sep="\t",row.names=F,quote=F)
+print(paste0("writing ",workDir,"/star_salmon/salmon.merged.gene_lengths.",samples,".tsv"))
 
 
 

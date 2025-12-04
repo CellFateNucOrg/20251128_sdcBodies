@@ -1,9 +1,9 @@
 suppressMessages(library("log4r"))
 
-resultsRun="res04"
+resultsRun="res03a"
 
-#samples="allSamples"
-samples="no1298IPB2"
+samples="allSamples"
+#samples="no1298IPB2"
 #samples="no1298IPB2_lowInput"
 
 
@@ -22,7 +22,7 @@ if(raptor){
   filterOscillating=F
 }
 
-shrink=T
+shrink=F
 
 if(Sys.info()['sysname']=="Darwin"){
   serverPath="/Volumes/external.data/MeisterLab"
@@ -47,18 +47,21 @@ prefix=""
 
 dir.create(paste0(workDir,runName,"/logs"), showWarnings = FALSE, recursive = TRUE)
 
-log_file<-paste0(workDir,runName,"/logs/variables_log.log")
-file_logger <- logger("INFO", appenders = file_appender(log_file))
+log_file<-paste0(workDir,runName,"/logs/variables.log")
+
+file_logger <- logger("INFO", appenders = file_appender(log_file,append=F))
 info(file_logger, paste0("workDir: ",workDir))
 info(file_logger, paste0("runName: ",runName))
+#file_appender(log_file, append = TRUE, layout = default_log_layout())
 
 
 ## sampleSheet
 sampleSheetFile<-paste0(workDir,"/fileList_",samples,".csv")
+info(file_logger, paste0("sampleSheet: ",sampleSheetFile))
 
 ## contrasts file
 contrastsFile<-paste0(workDir,"/contrasts.csv")
-
+info(file_logger, paste0("contrastsFile: ",contrastsFile))
 
 ## gtf file
 genomeVer="WS295"
@@ -81,9 +84,11 @@ countsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
 log4r::info(file_logger, paste0("counts file: ",countsFile))
 
 ## lengths file
-lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths",
-                   ifelse(samples=="allSamples","",paste0(".",samples)),
-                   ".tsv")
+if(samples=="no1298IPB2_lowInput"){
+  lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.",samples,".tsv")
+} else {
+  lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.tsv")
+}
 log4r::info(file_logger, paste0("lengths file: ",lengthsFile))
 
 
@@ -97,7 +102,7 @@ if(samples=="no1298IPB2_lowInput"){
 log4r::info(file_logger, paste0("tpm file: ",tpmFile))
 
 
-if(Sys.info()['sysname']=="Darwin"){
-  devtools::session_info(to_file=paste0(workDir,runName,"/logs/sessionInfo_variables.txt"))
+if(Sys.info()['sysname']=="Darwin" |  Sys.info()['sysname']=="Windows"){
+  devtools::session_info(to_file=paste0(workDir,runName,"/logs/variables_sessionInfo.txt"))
 }
 

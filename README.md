@@ -2,16 +2,25 @@
 
 ## RNAseq alignment
 
-Sample sheet and contrast matrix created with ***./makeSampleSheet.R***
+The easiest way to create a sample sheet is to first list the fastq files with full paths
+and push them to a file which you then modify. The command will look something like this (depending on 
+on the directory structure where your fastq files are stored and how they are called):
 
-NOTE: If you choose to filter out samples, you must make a new sample sheet, adding _<samples> to the name (see below)
+```
+ls $PWD/fastq/*/*.fq.gz > fileList.txt
+```
+
+Then the sample sheet and contrast matrix are created with ***./makeSampleSheet.R***
+
+NOTE: If you choose to filter out samples or add samples, you must make a new sample sheet, adding _<samples> to the name where <samples> is 
+a name given to the sample set in variables.R (see below).
 
 Initial alignment to genome/transcriptome carried out with ***./nf_rnaseq_submit.sh***
 
 ## Differential expression analysis
 
 DESeq2 runs (with nf-core or raptor) is dependant on variables set in the ***./variables.R*** script.
-For each combination of parameters, use a different resNN_ prefix for the folder, and set the combination of parameters you want. 
+For each combination of parameters, a unique results folder will be created.
 Usually it is best to start with very permissive parameters and gradually perform stricter filtering if necessary.
 
 If you choose to sensor particular samples, you must create a new sample sheet - add the code to ***./makeSampleSheet.R***

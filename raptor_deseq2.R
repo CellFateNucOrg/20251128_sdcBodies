@@ -54,6 +54,11 @@ col.palette1 <- c('grey20', 'firebrick', 'royalblue', 'forestgreen')
 
 #sampleSheet<-read.csv(paste0(workDir,"/fileList_extended_no1298IPB2.csv"), header=T, stringsAsFactors = T)
 
+contrasts<-read.csv(contrastsFile,sep=",",header=T)
+counts<-read.delim(countsFile)
+tpm<-read.delim(tpmFile)
+sampleSheet<-read.csv(sampleSheetFile, header=T, stringsAsFactors = T)
+
 
 idx<-which(colnames(counts) %in% sampleSheet$sample)
 counts<-counts[,c(1,2,idx)]
@@ -61,7 +66,7 @@ tpm<-tpm[,c(1,2,idx)]
 
 
 
-shrink=ifelse(grepl("noShrink",runName),FALSE,TRUE)
+#shrink=ifelse(shrink,FALSE,TRUE)
 if(shrink==TRUE){
   ylimits=c(-0.5,0.5)
 } else {

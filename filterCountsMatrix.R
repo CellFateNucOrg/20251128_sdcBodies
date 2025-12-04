@@ -15,8 +15,10 @@ table(seqnames(gtf))
 if(samples=="allSamples"){
   counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
 } else if(samples=="no1298IPB2"){
+  #print("no1298IPB2")
   counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
-} else if(samples=="no1298IPB2_lowinput"){
+} else if(samples=="no1298IPB2_lowInput"){
+  #print("no1298IPB2_lowInput")
   counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.no1298IPB2_lowInput.tsv"))
 }
 
