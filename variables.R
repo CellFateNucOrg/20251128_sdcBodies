@@ -1,13 +1,10 @@
 suppressMessages(library("log4r"))
 
-#args = commandArgs(trailingOnly=T)
+resultsRun="res03"
 
-
-resultsRun="res01"
-
-#samples="allSamples"
+samples="allSamples"
 #samples="no1298IPB2"
-samples="no1298IPB2_lowInput"
+#samples="no1298IPB2_lowInput"
 
 
 #minAbund=5
@@ -17,15 +14,15 @@ minAbund=10
 minSamples=16
 
 filterNoncoding=T
-filterOscillating=T
 filterMitochondrial=T
 
+filterOscillating=T
 raptor=F
 if(raptor){
   filterOscillating=F
 }
 
-shrink=F
+shrink=T
 
 if(Sys.info()['sysname']=="Darwin"){
   serverPath="/Volumes/external.data/MeisterLab"

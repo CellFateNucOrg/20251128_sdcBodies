@@ -41,7 +41,16 @@ else
   RUN_NAME=res01_no1298IPB2_LowInput_minAbun${MIN_ABUND}_minSamples${MIN_SAMPLES}_pc_noOsc_noShrink
 fi
 
-
+echo "running pipeline with following variables:"
+echo $gtfFile
+echo $RUN_NAME
+echo $SAMPLE_SHEET
+echo $COUNTS
+echo $LENGTHS
+echo $CONTRASTS
+echo $SHRINK
+echo $MIN_ABUND
+echo $MIN_SAMPLES
 
 RESULTS_DIR=$WORK_DIR/$RUN_NAME
 mkdir -p $RESULTS_DIR
@@ -53,7 +62,7 @@ nextflow run nf-core/differentialabundance -profile rnaseq,singularity \
 	--matrix  $COUNTS \
 	--transcript_length_matrix $LENGTHS \
 	--contrasts $CONTRASTS  \
-	--deseq2_shrink_lfc $SHRINK  --filtering_min_abundance $MIN_ABUND --filtering_min_samples $MIN_SAMPLES
+	--deseq2_shrink_lfc $SHRINK  --filtering_min_abundance $MIN_ABUND --filtering_min_samples $MIN_SAMPLES 
 
 #keep a record of this file in the results directory
 cp nf_differentialabundance.sh $RESULTS_DIR/

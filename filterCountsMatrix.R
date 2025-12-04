@@ -14,7 +14,15 @@ table(seqnames(gtf))
 # protein coding only
 #pc<-import(paste0(serverPath,"/publicData/genomes/",genomeVer,"/c_elegans.PRJNA13758.",genomeVer,".canonical_geneset.protein_coding.gtf"))
 
-counts<-read.delim(countsFile)
+if(samples=="allSamples"){
+  counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
+} else if(samples=="no1298IPB2"){
+  counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
+} else if(samples=="no1298IPB2_lowinput"){
+  counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.no1298IPB2_lowInput.tsv"))
+}
+# colnames(counts)<-gsub("PWM","PMW",colnames(counts))
+# write.table(counts,countsFile,sep="\t",row.names=F,quote=F)
 dim(counts)
 if(filterNoncoding){
   counts<-counts[counts$gene_id %in% gtf$gene_id,]
@@ -53,6 +61,16 @@ write.table(counts_filt,paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
                           ".tsv"),sep="\t",row.names=F,quote=F)
 
 
+
+
+# lengths<-read.delim(lengthsFile)
+# colnames(lengths)<-gsub("PWM","PMW",colnames(lengths))
+# write.table(lengths,lengthsFile,sep="\t",row.names=F,quote=F)
+#
+#
+# tpm<-read.delim(tpmFile)
+# colnames(tpm)<-gsub("PWM","PMW",colnames(tpm))
+# write.table(tpm,tpmFile,sep="\t",row.names=F,quote=F)
 # ## remove oscilating from combined bulk and low input sequencing
 # counts<-read.delim(file="./star_salmon/salmon.merged.gene_counts.bulk_plus_lowinput.tsv",header=T)
 #
