@@ -56,16 +56,12 @@ write.csv(ss,file=paste0(workDir,"/fileList_",samples,".csv"),quote=F,row.names=
 
 
 # combine samples sheets for bulk and low input ------
-## NOTE: need to add columns from other samples sheet and also add columns to counts/lengths/tpm matrices
+## NOTE: need to add samples from lowinput sample sheet and also add columns to counts/lengths/tpm matrices
 samples="no1298IPB2_lowInput"
 bulk<-read.csv(paste0(workDir,"/fileList_no1298IPB2.csv"))
 bulk$seqType<-"bulk"
 lowinput<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/samplesheet_extended_compareBulk.csv"))
 
-#lowinput$sample<-gsub("PWM","PMW",lowinput$sample)
-#lowinput$strain<-gsub("PWM","PMW",lowinput$strain)
-#lowinput$group<-gsub("PWM","PMW",lowinput$group)
-#write.csv(lowinput,paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/samplesheet_extended_compareBulk.csv"),row.names=F,quote=F)
 
 toRemove<-colnames(lowinput)[! (colnames(lowinput) %in% colnames(bulk))] # remove gene id columns for merging
 lowinput[,toRemove]<-NULL
@@ -80,9 +76,6 @@ bulk_cnts<-read.csv(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv")
 
 lowinput_cnts<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_counts.tsv"),sep="\t")
 
-#colnames(lowinput_cnts)<-gsub("PWM","PMW",colnames(lowinput_cnts))
-#write.table(lowinput_cnts,paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_counts.tsv"),sep="\t",row.names=F,quote=F)
-
 keep<-lowinput_cnts$gene_id %in% bulk_cnts$gene_id
 lowinput_cnts_filt<-lowinput_cnts[keep,]
 
@@ -95,9 +88,6 @@ write.table(cnts,file=paste0(workDir,"/star_salmon/salmon.merged.gene_counts.",s
 bulk_len<-read.csv(paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.tsv"),sep="\t")
 
 lowinput_len<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_lengths.tsv"),sep="\t")
-
-#colnames(lowinput_len)<-gsub("PWM","PMW",colnames(lowinput_len))
-#write.table(lowinput_len,paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_lengths.tsv"),sep="\t",row.names=F,quote=F)
 
 
 keep<-lowinput_len$gene_id %in% bulk_len$gene_id
@@ -113,9 +103,6 @@ write.table(len,file=paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.",s
 bulk_tpm<-read.csv(paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.tsv"),sep="\t")
 
 lowinput_tpm<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_tpm.tsv"),sep="\t")
-
-#colnames(lowinput_tpm)<-gsub("PWM","PMW",colnames(lowinput_tpm))
-#write.table(lowinput_tpm,paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_tpm.tsv"),sep="\t",row.names=F,quote=F)
 
 keep<-lowinput_tpm$gene_id %in% bulk_tpm$gene_id
 lowinput_tpm_filt<-lowinput_tpm[keep,]

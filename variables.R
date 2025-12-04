@@ -1,9 +1,9 @@
 suppressMessages(library("log4r"))
 
-resultsRun="res03"
+resultsRun="res04"
 
-samples="allSamples"
-#samples="no1298IPB2"
+#samples="allSamples"
+samples="no1298IPB2"
 #samples="no1298IPB2_lowInput"
 
 
@@ -55,11 +55,9 @@ info(file_logger, paste0("runName: ",runName))
 
 ## sampleSheet
 sampleSheetFile<-paste0(workDir,"/fileList_",samples,".csv")
-#try(sampleSheet<-read.csv(sampleSheetFile, header=T, stringsAsFactors = T),silent=T)
 
 ## contrasts file
 contrastsFile<-paste0(workDir,"/contrasts.csv")
-#try(contrasts<-read.csv(contrastsFile,sep=",",header=T),silent=T)
 
 
 ## gtf file
@@ -72,7 +70,6 @@ if(filterNoncoding & filterMitochondrial){
   gtfFile<-paste0(serverPath,"/publicData/genomes/",genomeVer,"/c_elegans.PRJNA13758.",genomeVer,".canonical_geneset.gtf")
 }
 log4r::info(file_logger, paste0("gtf file: ",gtfFile))
-#gtf<-import(gtfFile)
 
 ## counts file
 countsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
@@ -82,14 +79,12 @@ countsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
                                ifelse(samples=="allSamples","",paste0(".",samples)),
                                ".tsv")
 log4r::info(file_logger, paste0("counts file: ",countsFile))
-#counts<-read.delim(countsFile)
 
 ## lengths file
 lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths",
                    ifelse(samples=="allSamples","",paste0(".",samples)),
                    ".tsv")
 log4r::info(file_logger, paste0("lengths file: ",lengthsFile))
-#lengths<-read.delim(lengthsFile)
 
 
 ## tpm file
@@ -100,7 +95,7 @@ if(samples=="no1298IPB2_lowInput"){
 }
 
 log4r::info(file_logger, paste0("tpm file: ",tpmFile))
-#tpm<-read.delim(tpmFile)
+
 
 if(Sys.info()['sysname']=="Darwin"){
   devtools::session_info(to_file=paste0(workDir,runName,"/logs/sessionInfo_variables.txt"))

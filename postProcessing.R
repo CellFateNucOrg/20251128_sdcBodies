@@ -7,35 +7,10 @@ library(rtracklayer)
 library(dplyr)
 library(BSgenome.Celegans.UCSC.ce11)
 
+source("./variables.R")
 
 
-serverPath="/Volumes/external.data/MeisterLab"
-#serverPath="Z:/MeisterLab"
-
-workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
-#runName="/res01_allSamples_minAbund5_minSamples3"
-#runName="/res02_no1298IPB2_minAbund5_minSamples3"
-#runName="/res03_no1298IPB2_minAbund5_minSamples3_pc"
-#runName="/res04_no1298IPB2_minAbund5_minSamples3_pc_noOsc"
-#runName="/res05_no1298IPB2_minAbund5_minSamples3_pc_noOsc_noShrink"
-#runName="/res06_no1298IPB2_minAbund10_minSamples9_pc_noOsc_noShrink"
-#runName="/res07_no1298IPB2_minAbund10_minSamples17_pc_noOsc_noShrink"
-#runName="/res08_no1298IPB2_minAbund10_minSamples17_pc_noOsc"
-#runName="/res09_no1298IPB2_no1001NOB1_minAbund10_minSamples16_pc_noOsc"
-#runName="/res10_noB2_minAbund10_minSamples12_pc_noOsc"
-#runName="/res11_no1298IPB2_minAbund5_minSamples3_pc_raptor"
-#runName="/res12_no1298IPB2_minAbund10_minSamples9_pc_raptor"
-#runName="/res13_no1298IPB2_minAbund10_minSamples9_pc_raptor_noShrink"
-#runName="/res14_no1298IPB2_minAbund10_minSamples16_pc_raptor_noShrink"
-#runName="/res15_no1298IPB2_LowInput_minAbun10_minSamples9_pc_noOsc_noShrink"
-#runName="/res16_no1298IPB2_LowInput_minAbun10_minSamples9_pc_noOsc"
-#runName="/res17_no1298IPB2_lowInput_minAbund10_minSamples9_pc_raptor_noShrink"
-#runName="/res18_no1298IPB2_LowInput_minAbun10_minSamples16_pc_noOsc_noShrink"
-#runName="/res19_no1298IPB2_lowInput_minAbund10_minSamples16_pc_raptor_noShrink"
-runName="/res20_no1298IPB2_minAbund10_minSamples16_pc_raptor_noShrink"
-prefix=""
-
-setwd(workDir)
+#setwd(workDir)
 dir.create(paste0(workDir,runName,"/custom/rds"), showWarnings = FALSE, recursive = TRUE)
 dir.create(paste0(workDir,runName,"/custom/txt"), showWarnings = FALSE, recursive = TRUE)
 genomeVer<-"WS295"
@@ -51,8 +26,6 @@ annotate_results <- function(gtf, pattern="\\.deseq2\\.results\\.tsv", path=".",
       df$gene_name<-row.names(df)
     }
     file_name <- gsub("\\.deseq2\\.results\\.tsv", "", basename(f))
-    #group_name <- gsub(paste0(prefix,"_"),"",file_name)
-    #print(group_name)
     df <- inner_join(df, data.frame(gtf), by=c("gene_id" = "gene_id"))
     df$group <- file_name #group_name
     write.table(df, paste0(path,"/custom/txt/",file_name, ".deseq2.results_annotated.tsv"),
@@ -70,7 +43,7 @@ combine_results <- function(pattern="\\.deseq2\\.results_annotated\\.tsv",path="
 #-----------------
 
 
-gtf<-import(paste0(serverPath,"/publicData/genomes/",genomeVer,"/c_elegans.PRJNA13758.",genomeVer,".canonical_geneset.gtf"))
+gtf<-import(gtfFile)
 gtf <- gtf[gtf$type == "gene"]
 mcols(gtf)<-mcols(gtf)[c("source","type","gene_id","gene_biotype","gene_name")]
 gtf$source<-genomeVer
@@ -80,7 +53,7 @@ gtf<-sort(gtf)
 
 ## annotate results tables -----
 
-contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
+contrasts<-read.csv(contrastsFile,sep=",",header=T)
 
 annotate_results(gtf,path=paste0(workDir,runName),pattern="\\.deseq2\\.results\\.tsv")
 
@@ -111,7 +84,6 @@ tbl<-list()
 for(LFCthresh in LFCthresholds){
   updown<-NULL
   for (c in contrastNames){
-    #sample<-gsub("\\.deseq2\\.results\\.tsv","",t)
     df<-read.delim(paste0(workDir,runName,"/tables/differential/",c,".deseq2.results.tsv"),header=T,stringsAsFactors=F)
     df$padj[is.na(df$padj)]<-0 # set NA to 1
     tmp<-data.frame(sample=c,

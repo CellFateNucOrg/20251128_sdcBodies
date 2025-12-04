@@ -19,38 +19,12 @@ theme_set(
     )
 )
 
-serverPath="/Volumes/external.data/MeisterLab"
-#serverPath="Z:/MeisterLab"
+
+source("./variables.R")
 source("./functions_exploratory_analysis.R")
 
-workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
-#runName="/res01_allSamples_minAbund5_minSamples3"
-#runName="/res02_no1298IPB2_minAbund5_minSamples3"
-#runName="/res03_no1298IPB2_minAbund5_minSamples3_pc"
-#runName="/res04_no1298IPB2_minAbund5_minSamples3_pc_noOsc"
-#runName="/res05_no1298IPB2_minAbund5_minSamples3_pc_noOsc_noShrink"
-#runName="/res06_no1298IPB2_minAbund10_minSamples9_pc_noOsc_noShrink"
-#runName="/res07_no1298IPB2_minAbund10_minSamples17_pc_noOsc_noShrink"
-#runName="/res08_no1298IPB2_minAbund10_minSamples17_pc_noOsc"
-#runName="/res09_no1298IPB2_no1001NOB1_minAbund10_minSamples16_pc_noOsc"
-#runName="/res10_noB2_minAbund10_minSamples12_pc_noOsc"
-#runName="/res11_no1298IPB2_minAbund5_minSamples3_pc_raptor"
-#runName="/res12_no1298IPB2_minAbund10_minSamples9_pc_raptor"
-#runName="/res13_no1298IPB2_minAbund10_minSamples9_pc_raptor_noShrink"
-#runName="/res14_no1298IPB2_minAbund10_minSamples16_pc_raptor_noShrink"
-#runName="/res15_no1298IPB2_LowInput_minAbun10_minSamples9_pc_noOsc_noShrink"
-#runName="/res16_no1298IPB2_LowInput_minAbun10_minSamples9_pc_noOsc"
-#runName="/res17_no1298IPB2_lowInput_minAbund10_minSamples9_pc_raptor_noShrink"
-#runName="/res18_no1298IPB2_LowInput_minAbun10_minSamples16_pc_noOsc_noShrink"
-#runName="/res19_no1298IPB2_lowInput_minAbund10_minSamples16_pc_raptor_noShrink"
-runName="/res20_no1298IPB2_minAbund10_minSamples16_pc_raptor_noShrink"
-prefix=""
 
-contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
-
-
-genomeVer<-"WS295"
-
+contrasts<-read.csv(contrastsFile,sep=",",header=T)
 
 
 results<-readRDS(paste0(workDir,runName,"/custom/rds/",prefix,".results_annotated.RDS"))
@@ -92,7 +66,7 @@ results %>% filter(!is.na(padj), padj < 0.05) %>% group_by(group,seqnames) %>%
 dir.create(paste0(workDir, runName, "/custom/plots/byChrRegion"), showWarnings = FALSE, recursive = TRUE)
 gr<-tableToGranges(results)
 seqlevelsStyle(gr) <- "UCSC"
-chrRegions<-readRDS("/Users/semple/Documents/MeisterLab/papers/Isiaka_etal/publicData/chr_regions_Rockman2009.RDS")
+chrRegions<-readRDS(paste0(serverPath,"/publicData/Various/Rockman_2009_armsVcenter/chrRegions_Rockman2009.RDS"))
 chrRegions<-tableToGranges(chrRegions)
 ol<-findOverlaps(gr,chrRegions,ignore.strand=T)
 gr$chr_region <- NA
@@ -153,43 +127,6 @@ p<-ggplot(df, aes(x=anchor, y=log2FoldChange)) +
 p
 ggsave(paste0(workDir,runName,"/custom/plots/byChrRegion/",prefix,"_boxplot_anchorVnotanchor.pdf"), p, width=19, height=13, unit="cm")
 
-#### bigwigs --------------
-# dir.create("./tracks")
-#
-# chrI_GBPD1<-tableToGranges(results[results$group=="chrI_GBPD1_lacI_BoundvIPTG",])
-# forBW$score<-chrI_GBPD1$log2FoldChange
-# export(forBW,"./tracks/chrI_GBPD1_lacI_BoundvIPTG_lfc.bedGraph", format="bedGraph")
-# forBW$score<--log10(chrI_GBPD1$padj)
-# forBW$score[is.na(forBW$score)] <- 0
-# export(forBW,"./tracks/chrI_GBPD1_lacI_BoundvIPTG_mlog10padj.bedGraph", format="bedGraph")
-#
-#
-# chrV_GBPD1<-tableToGranges(results[results$group=="chrV_GBPD1_lacI_BoundvIPTG",])
-# forBW$score<-chrV_GBPD1$log2FoldChange
-# export(forBW,"./tracks/chrV_GBPD1_lacI_BoundvIPTG_lfc.bedGraph", format="bedGraph")
-# forBW$score<--log10(chrV_GBPD1$padj)
-# forBW$score[is.na(forBW$score)] <- 0
-# export(forBW,"./tracks/chrV_GBPD1_lacI_BoundvIPTG_mlog10padj.bedGraph", format="bedGraph")
-#
-# chrI<-tableToGranges(results[results$group=="chrI_lacI_BoundvIPTG",])
-# forBW$score<-chrI$log2FoldChange
-# export(forBW,"./tracks/chrI_lacI_BoundvIPTG_lfc.bedGraph", format="bedGraph")
-# forBW$score<--log10(chrI$padj)
-# forBW$score[is.na(forBW$score)] <- 0
-# export(forBW,"./tracks/chrI_lacI_BoundvIPTG_mlog10padj.bedGraph", format="bedGraph")
-#
-#
-# chrVregion<-GRanges("chrV:20763827-20763828")
-# seqlevels(chrVregion)<-seqlevels(Celegans)
-# chrIregion<-GRanges("chrI:7530582-7530611")
-# seqlevels(chrIregion)<-seqlevels(Celegans)
-# targets<-c(chrIregion,chrVregion)
-#
-# seqinfo(targets)<-seqinfo(Celegans)
-#
-# targets<-resize(targets,width=100,fix="center")
-# export(targets,"./tracks/targets.bed")
-
 
 ### binned lfc ------
 gr<-tableToGranges(results)
@@ -215,7 +152,7 @@ df$binNum<-factor(df$binNum)
 minBin=min(as.numeric(df$binNum[df$seqnames=="chrI"]))
 maxBin=max(as.numeric(df$binNum[df$seqnames=="chrI"]))
 
-subdf<-df[df$seqnames=="chrI" & df$group=="PWM1001_Bound_vs_IPTG",]
+subdf<-df[df$seqnames=="chrI" & df$group=="PMW1001_Bound_vs_IPTG",]
 subdf<-subdf[subdf$log2FoldChange!=0 & !is.na(subdf$padj),]
 obsCounts<-data.frame(subdf) %>% group_by(group,binNum) %>%
   summarize(count = n())
@@ -241,7 +178,7 @@ p1<-ggplot(subdf, aes(x=binNum,y=log2FoldChange)) +
                      remove.bracket = T,angle=90,hide.ns=T,size=3)
 p1
 
-subdf<-df[df$seqnames=="chrI" & df$group=="PWM1291_Bound_vs_IPTG",]
+subdf<-df[df$seqnames=="chrI" & df$group=="PMW1291_Bound_vs_IPTG",]
 subdf<-subdf[subdf$log2FoldChange!=0 & !is.na(subdf$padj),]
 obsCounts<-data.frame(subdf) %>% group_by(group,binNum) %>%
   summarize(count = n())
@@ -265,7 +202,7 @@ p1a<-ggplot(subdf,aes(x=binNum,y=log2FoldChange)) +
                      remove.bracket = T,angle=90,hide.ns=T,size=3)
 p1a
 
-subdf<-df[df$seqnames=="chrI" & df$group=="PWM1298_Bound_vs_IPTG",]
+subdf<-df[df$seqnames=="chrI" & df$group=="PMW1298_Bound_vs_IPTG",]
 subdf<-subdf[subdf$log2FoldChange!=0 & !is.na(subdf$padj),]
 obsCounts<-data.frame(subdf) %>% group_by(group,binNum) %>%
   summarize(count = n())
@@ -306,7 +243,7 @@ if(shrink==TRUE){
 minBin=min(as.numeric(df$binNum[df$seqnames=="chrV"]))
 maxBin=max(as.numeric(df$binNum[df$seqnames=="chrV"]))
 
-subdf<-df[df$seqnames=="chrV" & df$group=="PWM1001_Bound_vs_IPTG",]
+subdf<-df[df$seqnames=="chrV" & df$group=="PMW1001_Bound_vs_IPTG",]
 subdf<-subdf[subdf$log2FoldChange!=0 & !is.na(subdf$padj),]
 obsCounts<-data.frame(subdf) %>% group_by(group,binNum) %>%
   summarize(count = n())
@@ -331,7 +268,7 @@ p2<-ggplot(subdf, aes(x=binNum,y=log2FoldChange)) +
                      remove.bracket = T,angle=90,hide.ns=T,size=3)
 p2
 
-subdf<-df[df$seqnames=="chrV" & df$group=="PWM1291_Bound_vs_IPTG",]
+subdf<-df[df$seqnames=="chrV" & df$group=="PMW1291_Bound_vs_IPTG",]
 subdf<-subdf[subdf$log2FoldChange!=0 & !is.na(subdf$padj),]
 obsCounts<-data.frame(subdf) %>% group_by(group,binNum) %>%
   summarize(count = n())
@@ -357,7 +294,7 @@ p2a<-ggplot(subdf, aes(x=binNum,y=log2FoldChange)) +
 p2a
 
 
-subdf<-df[df$seqnames=="chrV" & df$group=="PWM1298_Bound_vs_IPTG",]
+subdf<-df[df$seqnames=="chrV" & df$group=="PMW1298_Bound_vs_IPTG",]
 subdf<-subdf[subdf$log2FoldChange!=0 & !is.na(subdf$padj),]
 obsCounts<-data.frame(subdf) %>% group_by(group,binNum) %>%
   summarize(count = n())
