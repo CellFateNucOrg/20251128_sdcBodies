@@ -24,6 +24,7 @@ theme_set(
 )
 
 source("./variables.R")
+source("./filterCountsMatrix.R")
 
 print(runName)
 #serverPath="/Volumes/external.data/MeisterLab"
