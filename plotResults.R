@@ -229,7 +229,7 @@ p1b
 
 p<-ggarrange(p1,p1a,p1b,nrow=3)
 p
-
+p<-annotate_figure(p, top=text_grob(runName))
 ggsave(paste0(workDir,runName,"/custom/plots/byChrRegion/",prefix,"_chrI_",binWidth/1e3,"kb.pdf"),p,width=32,height=21,unit="cm")
 
 
@@ -321,6 +321,7 @@ p2b
 
 p<-ggarrange(p2,p2a,p2b,nrow=3)
 p
+p<-annotate_figure(p, top=text_grob(runName))
 ggsave(paste0(workDir,runName,"/custom/plots/byChrRegion/",prefix,"_chrV_",binWidth/1e3,"kb.pdf"),p,width=32,height=21,unit="cm")
 
 

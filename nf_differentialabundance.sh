@@ -56,6 +56,8 @@ RESULTS_DIR=$WORK_DIR/$RUN_NAME
 mkdir -p $RESULTS_DIR
 CONFIG_FILE=/mnt/external.data/MeisterLab/nf-core/unibe_izb.config
 
+Rscript --vanilla ./filterCountsMatrix.R
+
 nextflow run nf-core/differentialabundance -profile rnaseq,singularity \
 	--input $SAMPLE_SHEET --outdir $RESULTS_DIR -c $CONFIG_FILE -r 1.5.0 \
 	--gtf $gtfFile   \

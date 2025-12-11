@@ -47,11 +47,11 @@ write.csv(contrasts,file=paste0(workDir,"/contrasts.csv"),quote=F,row.names=F)
 
 
 # removing 1298_IP_B2 -----
-samples="no1298IPB2"
-ss<-read.csv(paste0(workDir,"/fileList_allSamples.csv"))
-ss<-ss[ss$sample!="PMW1298_IPTG_B2",]
-dim(ss)
-write.csv(ss,file=paste0(workDir,"/fileList_",samples,".csv"),quote=F,row.names=F)
+# samples="no1298IPB2"
+# ss<-read.csv(paste0(workDir,"/fileList_allSamples.csv"))
+# ss<-ss[ss$sample!="PMW1298_IPTG_B2",]
+# dim(ss)
+# write.csv(ss,file=paste0(workDir,"/fileList_",samples,".csv"),quote=F,row.names=F)
 
 ## NOTE: as long as sample sheet has correct samples, you do not need to filter count/length/tpm matrix columns
 
@@ -59,8 +59,8 @@ write.csv(ss,file=paste0(workDir,"/fileList_",samples,".csv"),quote=F,row.names=
 
 # combine samples sheets for bulk and low input ------
 ## NOTE: need to add samples from lowinput sample sheet and also add columns to counts/lengths/tpm matrices
-samples="no1298IPB2_lowInput"
-bulk<-read.csv(paste0(workDir,"/fileList_no1298IPB2.csv"))
+samples="allSamples_lowInput"
+bulk<-read.csv(paste0(workDir,"/fileList_allSamples.csv"))
 bulk$seqType<-"bulk"
 lowinput<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/samplesheet_extended_compareBulk.csv"))
 
@@ -73,10 +73,18 @@ newss<-rbind(bulk, lowinput[,colOrder])
 write.csv(newss,file=paste0("fileList_",samples,".csv"),quote=F,row.names=F)
 print(paste0("writing ",workDir,"/fileList_",samples,".csv"))
 
+
+
+
 # combine counts
 bulk_cnts<-read.csv(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"),sep="\t")
+bulk_cnts$gene_id<-as.character(bulk_cnts$gene_id)
+
+sum(bulk_cnts$gene_id %in% latorre$wormbaseID | bulk_cnts$gene_id %in% meeuse$wormbaseID)
 
 lowinput_cnts<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_counts.tsv"),sep="\t")
+
+sum(lowinput_cnts$gene_id %in% latorre$wormbaseID | lowinput_cnts$gene_id %in% meeuse$wormbaseID)
 
 keep<-lowinput_cnts$gene_id %in% bulk_cnts$gene_id
 lowinput_cnts_filt<-lowinput_cnts[keep,]
@@ -85,6 +93,7 @@ cnts<-cbind(bulk_cnts,lowinput_cnts_filt[3:ncol(lowinput_cnts_filt)])
 dim(cnts)
 write.table(cnts,file=paste0(workDir,"/star_salmon/salmon.merged.gene_counts.",samples,".tsv"),sep="\t",row.names=F,quote=F)
 print(paste0("writing ",workDir,"/star_salmon/salmon.merged.gene_counts.",samples,".tsv"))
+
 
 # combine gene lengths
 bulk_len<-read.csv(paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.tsv"),sep="\t")

@@ -25,6 +25,7 @@ theme_set(
 
 source("./variables.R")
 
+print(runName)
 #serverPath="/Volumes/external.data/MeisterLab"
 #serverPath="Z:/MeisterLab"
 #workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
@@ -206,3 +207,4 @@ file.copy(from=paste0(workDir,"/variables.R"),
           overwrite=TRUE)
 
 devtools::session_info(to_file=paste0(workDir,runName,"/logs/sessionInfo_raptor_deseq2.txt"))
+

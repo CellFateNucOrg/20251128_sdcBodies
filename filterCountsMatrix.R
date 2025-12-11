@@ -5,23 +5,31 @@ library(BSgenome.Celegans.UCSC.ce11)
 
 source("./variables.R")
 
-gtf<-import(gtfFile)
-length(gtf)
-table(gtf$type)
-table(gtf$gene_biotype)
-table(seqnames(gtf))
 
+gtf<-import(gtfFile)
+gtf <- gtf[gtf$type == "gene"]
+length(gtf)
+
+#####################-
+# filter counts matrix -----
+#####################-
 # import the right unfiltered count matrix depending on samples used
 if(samples=="allSamples"){
   counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
-} else if(samples=="no1298IPB2"){
-  #print("no1298IPB2")
-  counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
-} else if(samples=="no1298IPB2_lowInput"){
+# } else if(samples=="no1298IPB2"){
+#   #print("no1298IPB2")
+#   counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
+# } else if(samples=="no1298IPB2_lowInput"){
+#   #print("no1298IPB2_lowInput")
+#   counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.no1298IPB2_lowInput.tsv"))
+} else if(samples=="allSamples_lowInput"){
   #print("no1298IPB2_lowInput")
-  counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.no1298IPB2_lowInput.tsv"))
+  counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.allSamples_lowInput.tsv"))
 }
 
+#left_join(counts,data.frame(gtf),by=c("gene_id"="gene_id"))
+
+missing<-gtf[!(gtf$gene_id %in% counts$gene_id)]
 
 dim(counts)
 if(filterNoncoding){
@@ -37,11 +45,18 @@ if(filterMitochondrial){
   }
   dim(counts)
 }
-write.table(counts,paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
-                          ifelse(filterNoncoding,".protein_coding",""),
-                          ifelse(filterMitochondrial,".noMito",""),
-                          ifelse(samples=="allSamples","",paste0(".",samples)),
-                          ".tsv"),sep="\t",row.names=F,quote=F)
+
+outFile=paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
+                   ifelse(filterNoncoding,".protein_coding",""),
+                   ifelse(filterMitochondrial,".noMito",""),
+                   ifelse(samples=="allSamples","",paste0(".",samples)),
+                   ".tsv")
+# never overwrite th original file
+if (outFile!=paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv")){
+  print(paste0("writing ",outFile))
+  write.table(counts,outFile,sep="\t",row.names=F,quote=F)
+}
+
 
 # remove oscillating genes
 latorre<-read.delim(paste0(serverPath,"/publicData/Various/Oscillating_genes/oscillatingGenes_latorre.tsv"))
@@ -52,10 +67,15 @@ oscillating<-counts$gene_id %in% latorre$wormbaseID | counts$gene_id %in% meeuse
 counts_filt<-counts[!oscillating,]
 dim(counts_filt)
 dim(counts)
-write.table(counts_filt,paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
-                          ifelse(filterNoncoding,".protein_coding",""),
-                          ifelse(filterMitochondrial,".noMito",""),
-                          ifelse(filterOscillating,".noOsc",""),
-                          ifelse(samples=="allSamples","",paste0(".",samples)),
-                          ".tsv"),sep="\t",row.names=F,quote=F)
 
+outFile=paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
+               ifelse(filterNoncoding,".protein_coding",""),
+               ifelse(filterMitochondrial,".noMito",""),
+               ifelse(filterOscillating,".noOsc",""),
+               ifelse(samples=="allSamples","",paste0(".",samples)),
+               ".tsv")
+# never overwrite th original file
+if (outFile!=paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv")){
+  print(paste0("writing ",outFile))
+  write.table(counts_filt,outFile,sep="\t",row.names=F,quote=F)
+}

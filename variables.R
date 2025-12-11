@@ -1,28 +1,29 @@
 suppressMessages(library("log4r"))
 
-resultsRun="res03a"
+resultsRun="res01"
 
 samples="allSamples"
-#samples="no1298IPB2"
-#samples="no1298IPB2_lowInput"
+##samples="no1298IPB2"
+##samples="no1298IPB2_lowInput"
+#samples="allSamples_lowInput"
 
 
 #minAbund=5
 minAbund=10
 
 #minSamples=9
-minSamples=16
+minSamples=17
 
-filterNoncoding=T
-filterMitochondrial=T
+filterNoncoding=F
+filterMitochondrial=F
 
-filterOscillating=T
+filterOscillating=F
 raptor=F
 if(raptor){
-  filterOscillating=F
+   filterOscillating=F
 }
 
-shrink=F
+shrink=T
 
 if(Sys.info()['sysname']=="Darwin"){
   serverPath="/Volumes/external.data/MeisterLab"
@@ -84,7 +85,7 @@ countsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_counts",
 log4r::info(file_logger, paste0("counts file: ",countsFile))
 
 ## lengths file
-if(samples=="no1298IPB2_lowInput"){
+if(samples=="allSamples_lowInput"){
   lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.",samples,".tsv")
 } else {
   lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.tsv")
@@ -93,7 +94,7 @@ log4r::info(file_logger, paste0("lengths file: ",lengthsFile))
 
 
 ## tpm file
-if(samples=="no1298IPB2_lowInput"){
+if(samples=="allSamples_lowInput"){
   tpmFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.", samples,".tsv")
 } else {
   tpmFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.tsv")
