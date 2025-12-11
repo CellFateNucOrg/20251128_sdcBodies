@@ -27,34 +27,10 @@ source("./variables.R")
 source("./filterCountsMatrix.R")
 
 print(runName)
-#serverPath="/Volumes/external.data/MeisterLab"
-#serverPath="Z:/MeisterLab"
-#workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
-#minAbund=10
-#minSamples=16
-#runName=paste0("/res11_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor")
-#runName=paste0("/res12_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor")
-#runName=paste0("/res13_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
-#runName=paste0("/res14_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
-#runName=paste0("/res19_no1298IPB2_lowInput_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
-#runName=paste0("/res20_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
-#prefix=""
-#genomeVer<-"WS295"
-
-#setwd(workDir)
 
 source(paste0(workDir,"/raptor_functions.R"))
 col.palette1 <- c('grey20', 'firebrick', 'royalblue', 'forestgreen')
-#mapMethod="salmon"
-#prefix=paste0(mapMethod,"_raptor_age_deseq2_pc_nomito_lfcShrink_")
 
-#contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
-
-#counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.protein_coding.tsv"))
-#tpm<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.tsv"))
-
-
-#sampleSheet<-read.csv(paste0(workDir,"/fileList_extended_no1298IPB2.csv"), header=T, stringsAsFactors = T)
 
 contrasts<-read.csv(contrastsFile,sep=",",header=T)
 counts<-read.delim(countsFile)
@@ -85,7 +61,7 @@ dir.create(paste0(workDir,runName,"/tables/differential"), recursive=T, showWarn
 
 
 # load reference
-ref <- prepare_refdata("Cel_larval", "wormRef", 600)
+ref <- RAPToR::prepare_refdata("Cel_larval", "wormRef", 600)
 
 #pdat<-sampleSheet[,c("sample","genotype","strain","group","replicate","group")]
 
@@ -114,7 +90,7 @@ qs$pdat$replicate<-factor(qs$pdat$replicate)
 
 summary(qs$pdat)
 
-ae_X <- ae(qs$tpm, ref)
+ae_X <- RAPToR::ae(qs$tpm, ref)
 
 print(ae_X)
 par(mfrow=c(1,1))
@@ -139,7 +115,7 @@ dev.off()
 par(mfrow=c(1,1))
 
 
-qs_rc <- ref_compare(
+qs_rc <- RAPToR::ref_compare(
   X = log1p(qs$tpm), # sample data, log(TPM+1)
   ref = ref, # ref object
   ae_obj = ae_X, # ae object
@@ -151,7 +127,7 @@ print(qs_rc)
 plotList=list()
 c=1
 for(c in 1:nrow(contrasts)){
-  qs_lfc<-get_logFC(qs_rc,l=contrasts$target[c],l0=contrasts$reference[c],
+  qs_lfc<-RAPToR::get_logFC(qs_rc,l=contrasts$target[c],l0=contrasts$reference[c],
                     verbose=T)
 
   plotList[[contrasts$id[c]]]<-gg_logFC(qs_lfc, main = contrasts$id[c],
@@ -171,6 +147,7 @@ qs$pdat$ageZnorm<- (qs$pdat$age-mean(qs$pdat$age))/sd(qs$pdat$age)
 ae_X
 
 qs$count <- qs$count[apply(qs$count, 1, max)>5, ]
+
 # use age instead of batch
 dd0 <- DESeqDataSetFromMatrix(countData = qs$count,
                               colData = qs$pdat,

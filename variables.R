@@ -1,11 +1,11 @@
 suppressMessages(library("log4r"))
 
-resultsRun="res01"
+resultsRun="res05"
 
-samples="allSamples"
+#samples="allSamples"
 ##samples="no1298IPB2"
 ##samples="no1298IPB2_lowInput"
-#samples="allSamples_lowInput"
+samples="allSamples_lowInput"
 
 
 #minAbund=5
@@ -14,16 +14,16 @@ minAbund=10
 #minSamples=9
 minSamples=17
 
-filterNoncoding=F
-filterMitochondrial=F
+filterNoncoding=T
+filterMitochondrial=T
 
-filterOscillating=F
-raptor=F
+filterOscillating=T
+raptor=T
 if(raptor){
    filterOscillating=F
 }
 
-shrink=T
+shrink=F
 
 if(Sys.info()['sysname']=="Darwin"){
   serverPath="/Volumes/external.data/MeisterLab"
@@ -39,8 +39,8 @@ workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
 
 runName=paste0("/",resultsRun,"_",samples,"_minAbund",minAbund,"_minSamples",
                minSamples, ifelse(filterNoncoding,"_pc",""),
-               ifelse(filterOscillating,"_noOsc",""),
                ifelse(filterMitochondrial,"_noMito",""),
+               ifelse(filterOscillating,"_noOsc",""),
                ifelse(raptor,"_raptor",""),
                ifelse(shrink,"","_noShrink"))
 
