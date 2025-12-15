@@ -1,15 +1,15 @@
 suppressMessages(library("log4r"))
 
-resultsRun="res05"
+resultsRun="res10"
 
-#samples="allSamples"
+samples="allSamples"
 ##samples="no1298IPB2"
 ##samples="no1298IPB2_lowInput"
-samples="allSamples_lowInput"
+#samples="allSamples_lowInput"
+#samples="lowInputOnly"
 
-
-#minAbund=5
-minAbund=10
+minAbund=5
+#minAbund=10
 
 #minSamples=9
 minSamples=17
@@ -21,6 +21,13 @@ filterOscillating=T
 raptor=T
 if(raptor){
    filterOscillating=F
+#    prior=25
+#    priorSD=3
+#    spline=T
+# } else {
+#   prior=""
+#   priorSD=""
+#   spline=F
 }
 
 shrink=F
@@ -87,6 +94,8 @@ log4r::info(file_logger, paste0("counts file: ",countsFile))
 ## lengths file
 if(samples=="allSamples_lowInput"){
   lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.",samples,".tsv")
+} else if(samples=="lowInputOnly"){
+  lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.",samples,".tsv")
 } else {
   lengthsFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.tsv")
 }
@@ -95,6 +104,8 @@ log4r::info(file_logger, paste0("lengths file: ",lengthsFile))
 
 ## tpm file
 if(samples=="allSamples_lowInput"){
+  tpmFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.", samples,".tsv")
+} else if(samples=="lowInputOnly"){
   tpmFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.", samples,".tsv")
 } else {
   tpmFile<-paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.tsv")

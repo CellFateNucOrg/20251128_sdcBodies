@@ -122,3 +122,35 @@ tpm<-cbind(bulk_tpm,lowinput_tpm_filt[3:ncol(lowinput_tpm_filt)])
 
 write.table(tpm,file=paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.",samples,".tsv"),sep="\t",row.names=F,quote=F)
 
+
+
+#### lowInputOnly -----
+
+samples="lowInputOnly"
+
+lowinput<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/samplesheet_extended_compareBulk.csv"))
+write.csv(lowinput,file=paste0("fileList_",samples,".csv"),quote=F,row.names=F)
+print(paste0("writing ",workDir,"/fileList_",samples,".csv"))
+
+
+
+
+# get counts
+lowinput_cnts<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_counts.tsv"),sep="\t")
+
+write.table(lowinput_cnts,file=paste0(workDir,"/star_salmon/salmon.merged.gene_counts.",samples,".tsv"),sep="\t",row.names=F,quote=F)
+print(paste0("writing ",workDir,"/star_salmon/salmon.merged.gene_counts.",samples,".tsv"))
+
+
+# get gene lengths
+lowinput_len<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_lengths.tsv"),sep="\t")
+
+write.table(lowinput_len,file=paste0(workDir,"/star_salmon/salmon.merged.gene_lengths.",samples,".tsv"),sep="\t",row.names=F,quote=F)
+print(paste0("writing ",workDir,"/star_salmon/salmon.merged.gene_lengths.",samples,".tsv"))
+
+
+
+# combine gene tpm (for raptor)
+lowinput_tpm<-read.csv(paste0(serverPath,"/RNA_seq_BCN/202501_PM/Sinem/star_salmon/salmon.merged.gene_tpm.tsv"),sep="\t")
+
+write.table(lowinput_tpm,file=paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.",samples,".tsv"),sep="\t",row.names=F,quote=F)

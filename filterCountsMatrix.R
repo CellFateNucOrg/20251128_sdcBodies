@@ -25,6 +25,11 @@ if(samples=="allSamples"){
 } else if(samples=="allSamples_lowInput"){
   #print("no1298IPB2_lowInput")
   counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.allSamples_lowInput.tsv"))
+} else if(samples=="lowInputOnly"){
+  #print("no1298IPB2_lowInput")
+  counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.lowInputOnly.tsv"))
+} else {
+  stop("unknown samples option")
 }
 
 #left_join(counts,data.frame(gtf),by=c("gene_id"="gene_id"))
