@@ -41,7 +41,9 @@ default counts/lengths/tpm matrices).
 Running default DE analysis (excluding noncoding and oscilating genes) is carried out with ***./nf_differentialabundance.sh***
 If present, it uses ./variables.R to determine run parameters, otherwise you have to set them manually.
 
-Alternatively, [RAPToR](https://github.com/LBMC/RAPToR/tree/master) can be run on the samples to determine developmental age and then DESeq2 is run on the data using the age as a covariate with the ***./raptor_deseq2.R*** script.
+Alternatively, [RAPToR](https://github.com/LBMC/RAPToR/tree/master) can be run on the samples to determine developmental age and then DESeq2 is run on the data using the age as a covariate with the ***./raptor_deseq2.R*** script. Note: you can set a prior+-SD for the age estimation in the script.
+
+Raptor can also be run to fit splines to the genes across developmental time, thus using corrected gene expression levels for DESeq2 analysis, with the ***./raptor_deseq2_spline.R*** script.
 
 ## Custom plots
 
@@ -50,3 +52,7 @@ These scripts also depend on variables in the variables.R file. Make sure you ha
 For both DEseq scripts above, the results tables are post processed to add genomic location and gene names using the ***./postProcessing*** script
 
 Specific plots of gene expression on chrI and chrV are performed with the ***./plotResults.R***
+
+## Final plots
+Final plots for paper were created with the ***./PaperFig.R*** script. The results used for this was the following run:
+**"/res05_allSamples_lowInput_minAbund10_minSamples17_pc_noMito_raptor_noShrink"** which combined low input and bulk sequencing samples, filtered out the noncoding, mitochondrial and oscillating genes, used Raptor (with a prior of 25+-3) to estimate ages which were used as a variable in DESeq2, and did not use log fold change shrinkage. Note: using the rapor spline fitting gave marginally better results, but since it was not significantly better, we optted for the simpler pipeline with less data processing.
