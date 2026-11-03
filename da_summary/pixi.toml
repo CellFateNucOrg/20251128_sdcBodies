@@ -1,0 +1,15 @@
+[workspace]
+name = "da-report-summary"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64"]
+
+[dependencies]
+python = ">=3.10"
+matplotlib = ">=3.7"
+numpy = "*"
+pillow = "*"
+pyyaml = "*"
+
+[tasks]
+# usage: pixi run summarise --params params.yml --workdir /path/to/dataset
+summarise = "python summarise_da_report.py"

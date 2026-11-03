@@ -23,34 +23,36 @@ theme_set(
     )
 )
 
-serverPath="/Volumes/external.data/MeisterLab"
+serverPath="/Volumes/meister.data"
 #serverPath="Z:/MeisterLab"
-workDir=paste0(serverPath,"/jsemple/20251118_sdcBodies")
+workDir=paste0(serverPath,"/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1")
 minAbund=10
-minSamples=16
-#runName=paste0("/res11_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor")
-#runName=paste0("/res12_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor")
-#runName=paste0("/res13_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
-#runName=paste0("/res14_no1298IPB2_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
-runName=paste0("/res19_no1298IPB2_lowInput_minAbund",minAbund,"_minSamples",minSamples,"_pc_raptor_noShrink")
+minSamples=3
+# age estimation parameters:
+prior=27 #NULL # expected age in hours (at 20C) - try 27-28 since we grow at 22C, or look at plots with NULL first
+prior.params=10 #NULL # wide SD, usually i use 10 to help confine it to same larval stage, but not bias it too much. use NULL for initial plot
+refName<-"Cel_larval" # could also try "Cel_larv_YA" - seems better age estimation with NULL prior, but worse corelation overall.
+
+runName="03_noShrink_minAbund10_minSamples3_pc"
 
 prefix=""
-genomeVer<-"WS295"
+genomeVer<-"WS298"
 
 setwd(workDir)
 
-source(paste0(workDir,"/raptor_functions.R"))
+source(paste0(workDir,"/scripts/raptor_functions.R"))
 col.palette1 <- c('grey20', 'firebrick', 'royalblue', 'forestgreen')
 #mapMethod="salmon"
 #prefix=paste0(mapMethod,"_raptor_age_deseq2_pc_nomito_lfcShrink_")
 
-contrasts<-read.csv(paste0(workDir,"/contrasts_compareLI.csv"),sep=",",header=T)
+contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
+samplesheet <- read.csv(file.path(workDir, "samplesheet.csv"),header=T)
 
-counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.bulk_plus_lowinput.protein_coding.tsv"))
-tpm<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.bulk_plus_lowinput.tsv"))
+counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts_pc.tsv"))
+tpm<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_tpm_pc.tsv"))
 
 
-ss<-read.csv(paste0(workDir,"/fileList_extended_compareLI.csv"), header=T, stringsAsFactors = T)
+ss<-read.csv(paste0(workDir,"/samplesheet.csv"), header=T, stringsAsFactors = T)
 
 
 idx<-which(colnames(counts) %in% ss$sample)
@@ -68,15 +70,17 @@ if(shrink==TRUE){
 
 
 
-dir.create(paste0(workDir,runName,"/plots"), recursive=T, showWarnings = FALSE)
+dir.create(paste0(workDir,"/diffabund/custom/raptor/",runName), recursive=T, showWarnings = FALSE)
 
-dir.create(paste0(workDir,runName,"/tables/differential"), recursive=T, showWarnings = FALSE)
+#dir.create(paste0(workDir,"/diffabund/custom/differential"), recursive=T, showWarnings = FALSE)
 
 gtf<-import(paste0(serverPath,"/publicData/genomes/",genomeVer,"/c_elegans.PRJNA13758.",genomeVer,".canonical_geneset.protein_coding.gtf"))
 
+plot_refs("wormRef")
 
 # load reference
-ref <- prepare_refdata("Cel_larval", "wormRef", 600)
+ref <- prepare_refdata(refName, "wormRef", 600)
+
 
 #pdat<-ss[,c("sample","genotype","strain","group","replicate","group")]
 
@@ -105,13 +109,13 @@ qs$pdat$replicate<-factor(qs$pdat$replicate)
 
 summary(qs$pdat)
 
-ae_X <- ae(qs$tpm, ref)
-
+ae_X <- ae(qs$tpm, ref, prior=prior, prior.params=prior.params)
 print(ae_X)
+
 par(mfrow=c(1,1))
 
 # plot ages
-pdf(paste0(workDir,runName,"/plots/",prefix,"ages.pdf"),width=9,height=6)
+pdf(paste0(workDir,"/diffabund/custom/raptor/",runName,"/",refName,"_prior",prior,"_ages.pdf"),width=9,height=6)
 plot(ae_X,group=qs$pdat$strain, main="Ages of samples by strain",
      xlab="Age (h)", cex=0.5, col=col.palette1[qs$pdat$replicate])
 plot(ae_X,group=qs$pdat$group,main="Ages of samples by group",
@@ -121,11 +125,10 @@ plot(ae_X,group=qs$pdat$replicate, main="Ages of samples by replicate",
 dev.off()
 
 # plot full correlation
-pdf(paste0(workDir,runName,"/plots/",prefix,"_full_age_correlations.pdf"),width=9,height=6)
+pdf(paste0(workDir,"/diffabund/custom/raptor/",runName,"/",refName,"_prior",prior,"_full_age_correlations.pdf"),width=9,height=6)
 par(mfrow=c(2,3))
-plot_cor(ae_X,subset=1:6)
-plot_cor(ae_X,subset=7:12)
-plot_cor(ae_X,subset=13:17)
+pages <- split(seq_len(nrow(samplesheet)), ceiling(seq_len(nrow(samplesheet)) / 6))
+for (s in pages) plot_cor(ae_X, subset = s)
 dev.off()
 par(mfrow=c(1,1))
 
@@ -150,14 +153,18 @@ for(c in 1:nrow(contrasts)){
 }
 
 
-p<-ggarrange(plotlist=plotList,ncol=3)
-ggsave(paste0(workDir,runName,"/plots/",prefix,"_development_lfc.pdf"),p,height=10, width=29, units="cm")
+p<-ggarrange(plotlist=plotList,ncol=nrow(contrasts))
+ggsave(paste0(workDir,"/diffabund/custom/raptor/",runName,"/",refName,"_prior",prior,"_development_lfc.pdf"),p,height=10, width=29, units="cm")
 
 
 
 idx<-match(qs$pdat$sample,row.names(ae_X$age.estimates))
 qs$pdat$age<-ae_X$age.estimates[idx,1]
 qs$pdat$ageZnorm<- (qs$pdat$age-mean(qs$pdat$age))/sd(qs$pdat$age)
+
+write.csv(qs$pdat,paste0(workDir,"/samplesheet_raptor.csv"),
+          row.names=F, quote=F)
+
 
 ae_X
 

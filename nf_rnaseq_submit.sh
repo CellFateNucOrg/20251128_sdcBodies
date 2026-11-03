@@ -9,14 +9,14 @@ source $CONDA_ACTIVATE env_nf
 # percentages
 export NXF_JVM_ARGS="-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=75"
 
-genomeVer=WS295
-genomeDir=/mnt/external.data/MeisterLab/publicData/genomes/${genomeVer}
+genomeVer=WS298
+genomeDir=/mnt/meister.data/publicData/genomes/${genomeVer}
 genomeFile=${genomeDir}/c_elegans.PRJNA13758.${genomeVer}.genomic.fa
 gtfFile=${genomeDir}/c_elegans.PRJNA13758.${genomeVer}.canonical_geneset.gtf
 
-WORK_DIR=/mnt/external.data/MeisterLab/jsemple/20251118_sdcBodies
-CONFIG_FILE=/mnt/external.data/MeisterLab/nf-core/unibe_izb.config
+WORK_DIR=/mnt/meister.data/sinem/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1
+CONFIG_FILE=/mnt/meister.data/nf-core/unibe_izb_apptainer.config
 
 
-nextflow run nf-core/rnaseq -profile singularity -r 3.21.0 --input ${WORK_DIR}/fileList.csv --multiqc_title multiqc_rnaseq --outdir $WORK_DIR -c $CONFIG_FILE --fasta $genomeFile --gtf $gtfFile
+nextflow run nf-core/rnaseq -profile apptainer -r 3.27.0 --input ${WORK_DIR}/fileList.csv --multiqc_title multiqc_rnaseq --outdir $WORK_DIR -c $CONFIG_FILE --fasta $genomeFile --gtf $gtfFile -resume
 

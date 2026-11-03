@@ -1,0 +1,43 @@
+✨ Pixi task (summarise): python summarise_da_report.py --params ../params.yml ../params_raptor.yml --workdir /mnt/meister.data/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1 -o /mnt/meister.data/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1/diffabund/da_summary.pdf
+[01_noShrink_minAbund10_minSamples3]
+  No_PMW1556 versus IPTG_PMW1556 in group (blocking: replicate)
+     padj <= 0.05 & abs(log2FC) >= 1 : 2 up, 1 down
+     padj <= 0.05 & abs(log2FC) > 0   : 160 up, 160 down
+[02_lfcShrink_minAbund10_minSamples3]
+  No_PMW1556 versus IPTG_PMW1556 in group (blocking: replicate)
+     padj <= 0.05 & abs(log2FC) >= None : 0 up, 0 down
+     padj <= 0.05 & abs(log2FC) > 0   : 160 up, 160 down
+[03_noShrink_minAbund10_minSamples3_pc]
+  No_PMW1556 versus IPTG_PMW1556 in group (blocking: replicate)
+     padj <= 0.05 & abs(log2FC) >= 1 : 2 up, 1 down
+     padj <= 0.05 & abs(log2FC) > 0   : 159 up, 155 down
+[04_lfcShrink_minAbund10_minSamples3_pc]
+  No_PMW1556 versus IPTG_PMW1556 in group (blocking: replicate)
+     padj <= 0.05 & abs(log2FC) >= None : 0 up, 0 down
+     padj <= 0.05 & abs(log2FC) > 0   : 159 up, 155 down
+[05_noShrink_minAbund10_minSamples3_pc_noOsc]
+  No_PMW1556 versus IPTG_PMW1556 in group (blocking: replicate)
+     padj <= 0.05 & abs(log2FC) >= None : 0 up, 0 down
+     padj <= 0.05 & abs(log2FC) > 0   : 82 up, 170 down
+[06_lfcShrink_minAbund10_minSamples3_pc_noOsc]
+  No_PMW1556 versus IPTG_PMW1556 in group (blocking: replicate)
+     padj <= 0.05 & abs(log2FC) >= None : 0 up, 0 down
+     padj <= 0.05 & abs(log2FC) > 0   : 82 up, 170 down
+[01_noShrink_minAbund10_minSamples3_raptor]
+  Formula: ~ ageZnorm + group (groupNo_PMW1556)
+     padj <= 0.05 & abs(log2FC) >= 1 : 1 up, 1 down
+     padj <= 0.05 & abs(log2FC) > 0   : 67 up, 86 down
+[02_lfcShrink_minAbund10_minSamples3_raptor]
+  Formula: ~ ageZnorm + group (groupNo_PMW1556)
+     padj <= 0.05 & abs(log2FC) >= None : 0 up, 0 down
+     padj <= 0.05 & abs(log2FC) > 0   : 67 up, 86 down
+[03_noShrink_minAbund10_minSamples3_pc_raptor]
+  Formula: ~ ageZnorm + group (groupNo_PMW1556)
+     padj <= 0.05 & abs(log2FC) >= 1 : 1 up, 1 down
+     padj <= 0.05 & abs(log2FC) > 0   : 67 up, 87 down
+[04_lfcShrink_minAbund10_minSamples3_pc_raptor]
+  Formula: ~ ageZnorm + group (groupNo_PMW1556)
+     padj <= 0.05 & abs(log2FC) >= None : 0 up, 0 down
+     padj <= 0.05 & abs(log2FC) > 0   : 67 up, 87 down
+
+Wrote /mnt/meister.data/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1/diffabund/da_summary.pdf (10 pages from 10 of 10 runs)
