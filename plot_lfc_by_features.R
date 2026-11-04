@@ -33,16 +33,21 @@ setwd(workDir)
 source(file.path(workDir, "scripts/functions_exploratory_analysis.R"))   # tableToGranges()
 source(file.path(workDir, "scripts/functions_lfc_feature_plots.R"))
 
-paramsFile      <- file.path(workDir, "scripts/params.yml")
-contrastsFile   <- file.path(workDir, "contrasts.csv")
+# which paramsheet goes with which contrasts file and samplesheet (relative to workDir).
+# Contrasts can be the csv or a YAML with formula contrasts; the samplesheet is used for the
+# lacO column (sites carried by each contrast's target group).
+runSets <- list(
+  list(params = "scripts/params.yml",        contrasts = "contrasts.csv",         samplesheet = "samplesheet.csv"),
+  list(params = "scripts/params_raptor.yml", contrasts = "contrasts_raptor.yml", samplesheet = "samplesheet_raptor.csv")
+)
 chrRegionsFile  <- file.path(serverPath, "publicData/various/Rockman_Kruglyak_2009_armsVcenter/celegans_rockman_kruglyak_2009_table1_domains_ce11_bp.tsv")
 anchorsFile     <- file.path(serverPath, "publicData/various/rexSites_Das2023/382_X.eigs_cis.vecs_37peaks_p0.65_correct.bed")
 targetsFile     <- file.path(workDir, "scripts/lacO_sites.bed")   # targets for the binned and zoomed plots
 # which lacO site(s) each strain carries: a lacO column in the samplesheet (site names from
 # the 4th column of targetsFile, several separated by ";", empty = none). Each contrast uses
-# the lacO of the samples in its target group. Without a lacO column, every site is shown
-# as present in every contrast.
-samplesheetFile <- file.path(workDir, "samplesheet.csv")
+# the lacO of the samples in its target group (for formula contrasts, the group is taken
+# from make_contrasts_str, e.g. "groupNo_PMW1556"). Without a lacO column, every site is
+# shown as present in every contrast.
 
 binWidth     <- 3e5
 regionSize   <- 3e5
@@ -53,12 +58,11 @@ excludeChroms   <- c("chrM")      # genes on these chromosomes are left out of a
 targetChroms <- NULL   # NULL = every chromosome with a site in targetsFile, or e.g. c("chrI", "chrV")
 
 # data shared by all runs ----------------------------------------------------
-paramsFiles <- file.path(workDir, "scripts", c("params.yml", "params_raptor.yml"))
-
-runNames <- unique(unlist(lapply(paramsFiles, function(f)
-  sapply(read_yaml(f), `[[`, "paramset_name"))))
-
-contrasts <- read.csv(contrastsFile, header = TRUE)
+runInfo <- do.call(rbind, lapply(runSets, function(s) data.frame(
+  runName     = sapply(read_yaml(file.path(workDir, s$params)), `[[`, "paramset_name"),
+  contrasts   = file.path(workDir, s$contrasts),
+  samplesheet = file.path(workDir, s$samplesheet))))
+runInfo <- runInfo[!duplicated(runInfo$runName), ]
 
 si <- seqinfo(Celegans)
 chrRegions <- GRanges(read.delim(chrRegionsFile))
@@ -67,8 +71,6 @@ anchors <- import(anchorsFile)
 seqlevelsStyle(anchors) <- "UCSC"
 targets <- load_sites(targetsFile, si)
 tiles <- make_tiles(seqlengths(si), binWidth, targets)
-siteMap <- sites_per_contrast(lacO_from_samplesheet(contrasts, read.csv(samplesheetFile, header = TRUE)), targets)
-if (!is.null(siteMap)) message("lacO per contrast: ", paste(names(siteMap), sapply(siteMap, paste, collapse = ";"), sep = " = ", collapse = ", "))
 
 if (is.null(targetChroms)) targetChroms <- as.character(unique(seqnames(targets)))
 targetChroms <- setdiff(targetChroms, excludeChroms)
@@ -94,8 +96,16 @@ output <- function(plot, typeDir, name, width, height) {
 }
 
 # loop over runs ---------------------------------------------------------------
-for (runName in runNames) {
+for (k in seq_len(nrow(runInfo))) {
+  runName <- runInfo$runName[k]
   message("== ", runName)
+
+  # contrasts and lacO sites of this run
+  samplesheet <- read.csv(runInfo$samplesheet[k], header = TRUE)
+  contrasts <- infer_comparison(read_contrasts(runInfo$contrasts[k]), samplesheet)
+  siteMap <- sites_per_contrast(lacO_from_samplesheet(contrasts, samplesheet), targets)
+  if (!is.null(siteMap)) message("   lacO per contrast: ", paste(names(siteMap), sapply(siteMap, paste, collapse = ";"),
+                                                             sep = " = ", collapse = ", "))
   rdsFile <- file.path(workDir, "diffabund/custom/rds", runName, "results_annotated.RDS")
   if (!file.exists(rdsFile)) {
     warning("missing, skipped: ", rdsFile, call. = FALSE)

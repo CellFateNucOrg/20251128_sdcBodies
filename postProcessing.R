@@ -17,16 +17,30 @@ workDir=paste0(serverPath,"/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_auto
 
 setwd(workDir)
 
-params <- read_yaml(paste0(workDir,"/scripts/params.yml"))
-
-runNames  <- sapply(params, `[[`, "paramset_name")
-
-contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
+# which paramsheet goes with which contrasts file (relative to workDir); the contrasts file
+# can be the csv or the pipeline YAML (e.g. with formula contrasts)
+runSets <- list(
+  list(params = "scripts/params.yml",        contrasts = "contrasts.csv"),
+  list(params = "scripts/params_raptor.yml", contrasts = "contrasts_raptor.yml")
+)
 
 
 ### functions ------
-annotate_results <- function(gtf, pattern="\\.deseq2\\.results\\.tsv", path=".", runName=""){
+# contrast ids from a contrasts csv/tsv or YAML file, in file order
+contrast_ids <- function(file) {
+  if (grepl("\\.ya?ml$", file, ignore.case = TRUE)) {
+    sapply(read_yaml(file)$contrasts, `[[`, "id")
+  } else {
+    read.csv(file, header = TRUE, sep = if (grepl("\\.tsv$", file)) "\t" else ",")$id
+  }
+}
+
+annotate_results <- function(gtf, pattern="\\.deseq2\\.results\\.tsv$", path=".", runName=""){
   fileList<-list.files(paste0(path,"/tables/differential/",runName),pattern=pattern, full.names=T)
+  if (length(fileList) == 0) warning(runName, ": no results files in ", paste0(path,"/tables/differential/",runName), call. = FALSE)
+  outDir <- paste0(path,"/custom/txt/",runName)
+  # remove annotated tables from earlier runs so stale files are not combined
+  unlink(list.files(outDir, pattern="\\.deseq2\\.results_annotated\\.tsv$", full.names=T))
   for(f in fileList){
     print(f)
     df <- read.delim(f, header=T)
@@ -34,18 +48,17 @@ annotate_results <- function(gtf, pattern="\\.deseq2\\.results\\.tsv", path=".",
       df$gene_id<-row.names(df)
       df$gene_name<-row.names(df)
     }
-    file_name <- gsub("_study\\.deseq2\\.results\\.tsv", "", basename(f))
-    #group_name <- gsub(paste0(prefix,"_"),"",file_name)
-    #print(group_name)
+    # contrast id = file name without the "_study" (if present) and the results suffix
+    file_name <- sub("(_study)?\\.deseq2\\.results\\.tsv$", "", basename(f))
     df <- inner_join(df, data.frame(gtf), by=c("gene_id" = "gene_id"))
-    df$group <- file_name #group_name
-    write.table(df, paste0(path,"/custom/txt/",runName,"/",file_name, ".deseq2.results_annotated.tsv"),
+    df$group <- file_name
+    write.table(df, paste0(outDir,"/",file_name, ".deseq2.results_annotated.tsv"),
                 row.names=F, quote=F, sep="\t", col.names=T)
   }
 }
 
 
-combine_results <- function(pattern="\\.deseq2\\.results_annotated\\.tsv",path=".",runName=""){
+combine_results <- function(pattern="\\.deseq2\\.results_annotated\\.tsv$",path=".",runName=""){
   fileList <- list.files(paste0(path,"/custom/txt/",runName), pattern=pattern, full.names=T)
   results <- do.call(rbind, lapply(fileList, read.delim, header=T))
   return(results)
@@ -59,31 +72,38 @@ mcols(gtf)<-mcols(gtf)[c("source","type","gene_id","gene_biotype","gene_name")]
 gtf$source<-genomeVer
 gtf<-sort(gtf)
 
-contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
+# run names and the contrasts file of each run
+runInfo <- do.call(rbind, lapply(runSets, function(s) data.frame(
+  runName   = sapply(read_yaml(file.path(workDir, s$params)), `[[`, "paramset_name"),
+  contrasts = file.path(workDir, s$contrasts))))
+runInfo <- runInfo[!duplicated(runInfo$runName), ]
 
 
-for(runName in runNames){
+for(k in seq_len(nrow(runInfo))){
+  runName <- runInfo$runName[k]
+  message("== ", runName)
+  ids <- contrast_ids(runInfo$contrasts[k])
+
   dir.create(paste0(workDir,"/diffabund/custom/rds/",runName), showWarnings = FALSE, recursive = TRUE)
   dir.create(paste0(workDir,"/diffabund/custom/txt/",runName), showWarnings = FALSE, recursive = TRUE)
 
   ## annotate results tables -----
-  annotate_results(gtf,path=paste0(workDir,"/diffabund"),pattern="\\.deseq2\\.results\\.tsv",runName=runName)
+  annotate_results(gtf,path=paste0(workDir,"/diffabund"),runName=runName)
 
-  results<-combine_results(path=paste0(workDir,"/diffabund"),pattern="\\.deseq2\\.results_annotated\\.tsv",runName=runName)
+  results<-combine_results(path=paste0(workDir,"/diffabund"),runName=runName)
+  if (is.null(results) || nrow(results) == 0) {
+    warning(runName, ": no annotated results, nothing saved", call. = FALSE)
+    next
+  }
   results$seqnames<- factor(results$seqnames, levels=c("I", "II", "III", "IV", "V", "X", "MtDNA"))
 
-  results$group<-factor(results$group, levels=contrasts$id)
+  # contrasts in contrasts-file order; groups not in the file are kept (at the end) with a warning
+  found <- unique(results$group)
+  extra <- setdiff(found, ids)
+  if (length(extra) > 0) warning(runName, ": groups not in ", basename(runInfo$contrasts[k]), ": ",
+                                 paste(extra, collapse = ", "), call. = FALSE)
+  results$group<-factor(results$group, levels=c(intersect(ids, found), extra))
+  message("   groups: ", paste(levels(results$group), collapse = ", "))
 
-  # if (file.exists(paste0(workDir,"/diffabund/custom/rds/",runName,"/results_annotated.RDS"))) {
-  #   response <- readline(prompt = paste(runName, "file already exists. Overwrite? [y/n]: "))
-  #   if (tolower(response) == "y") {
-  #     saveRDS(results, paste0(workDir,"/diffabund/custom/rds/",runName,"/results_annotated.RDS"))
-  #   } else {
-  #     print("file not overwritten")
-  #   }
-  # } else {
   saveRDS(results, paste0(workDir,"/diffabund/custom/rds/",runName,"/results_annotated.RDS"))
-  #}
 }
-
-

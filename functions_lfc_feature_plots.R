@@ -77,6 +77,49 @@ sites_per_contrast <- function(tab, targets) {
   s
 }
 
+# contrasts from a csv/tsv (id, variable, reference, target, blocking) or a pipeline YAML
+# (contrasts: - id, comparison: [variable, reference, target] and/or formula,
+# make_contrasts_str), as one table
+read_contrasts <- function(file) {
+  if (!grepl("\\.ya?ml$", file, ignore.case = TRUE))
+    return(read.csv(file, header = TRUE, sep = if (grepl("\\.tsv$", file)) "\t" else ","))
+  orNA <- function(x) if (is.null(x)) NA_character_ else as.character(x)
+  do.call(rbind, lapply(read_yaml(file)$contrasts, function(x) {
+    cmp <- unlist(x$comparison)
+    data.frame(id = x$id,
+               variable  = if (length(cmp) == 3) cmp[1] else NA_character_,
+               reference = if (length(cmp) == 3) cmp[2] else NA_character_,
+               target    = if (length(cmp) == 3) cmp[3] else NA_character_,
+               formula = orNA(x$formula),
+               make_contrasts_str = orNA(x$make_contrasts_str))
+  }))
+}
+
+# formula contrasts have no variable/target. Take them from make_contrasts_str when it is a
+# samplesheet column name followed by one of its values (e.g. "groupNo_PMW1556" ->
+# variable "group", target "No_PMW1556"), so the lacO sites of the target group can be found.
+infer_comparison <- function(contrasts, samplesheet) {
+  if (!"variable" %in% colnames(contrasts)) contrasts$variable <- NA_character_
+  if (!"target" %in% colnames(contrasts)) contrasts$target <- NA_character_
+  for (i in seq_len(nrow(contrasts))) {
+    if (!is.na(contrasts$variable[i]) && contrasts$variable[i] != "") next
+    mcs <- if ("make_contrasts_str" %in% colnames(contrasts)) contrasts$make_contrasts_str[i] else NA
+    if (is.na(mcs)) next
+    for (v in colnames(samplesheet)) {
+      lv <- unique(as.character(samplesheet[[v]]))
+      hit <- lv[paste0(v, lv) == mcs]
+      if (length(hit) == 1) {
+        contrasts$variable[i] <- v
+        contrasts$target[i] <- hit
+        break
+      }
+    }
+    if (is.na(contrasts$variable[i]))
+      warning("could not find the group of contrast ", contrasts$id[i], " from '", mcs, "'", call. = FALSE)
+  }
+  contrasts
+}
+
 # id/lacO table for sites_per_contrast(), from a `lacO` column in the samplesheet: for each
 # contrast, the lacO value(s) of the samples in its target group (column `variable`).
 # Returns a table without a lacO column if the samplesheet has none.
@@ -84,6 +127,10 @@ lacO_from_samplesheet <- function(contrasts, samplesheet) {
   if (!"lacO" %in% colnames(samplesheet)) return(data.frame(id = contrasts$id))
   lac <- sapply(seq_len(nrow(contrasts)), function(i) {
     v <- contrasts$variable[i]
+    if (is.null(v) || is.na(v) || v == "") {
+      warning("contrast ", contrasts$id[i], " has no group variable; no lacO sites assigned", call. = FALSE)
+      return("")
+    }
     if (!v %in% colnames(samplesheet)) stop("samplesheet has no column '", v, "' (contrast ", contrasts$id[i], ")")
     x <- as.character(samplesheet$lacO[as.character(samplesheet[[v]]) == as.character(contrasts$target[i])])
     if (length(x) == 0) warning("no samples for target '", contrasts$target[i], "' of ", contrasts$id[i], call. = FALSE)
@@ -152,6 +199,7 @@ boxplot_lfc <- function(df, xvar, ylimits, title, xlab, subtitle = NULL) {
     group_by(group) %>%
     wilcox_test(as.formula(paste("log2FoldChange ~", xvar)), ref.group = "all") %>%
     adjust_pvalue(method = "fdr") %>%
+    add_significance("p.adj") %>%   # recompute stars from the FDR values (used by hide.ns)
     p_format(new.col = TRUE, accuracy = 1e-32)
 
   ggplot(df, aes(x = .data[[xvar]], y = log2FoldChange)) +
@@ -178,6 +226,7 @@ plot_binned <- function(df, chrom, binWidth, ylimits, title, subtitle = NULL, la
     group_by(group) %>%
     wilcox_test(log2FoldChange ~ bin, ref.group = "all") %>%
     adjust_pvalue(method = "fdr") %>%
+    add_significance("p.adj") %>%   # recompute stars from the FDR values (used by hide.ns)
     p_format(new.col = TRUE, accuracy = 1e-32)
 
   brks <- levels(sub$bin)[seq(1, nlevels(sub$bin), by = labelEvery)]

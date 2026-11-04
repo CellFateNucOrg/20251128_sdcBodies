@@ -29,7 +29,8 @@ Usage
 
     python summarise_da_report.py study_differentialabundance_report.html -o summary.pdf
 
- Other options:  --assay "Variance stabilised"  --pca-colour lane  --outlier-variable lane
+ Other options:  --assay "Variance stabilised"  --pca-colour group  --pca-shape replicate  --outlier-variable lane
+                 --volcano-xlim-shrink 1  --volcano-xlim-noshrink 2  --volcano-ymax auto|<number>|none
                  --report-subdir diffabund/report  --report-name study_differentialabundance_report.html
 
 Runs whose report is missing (or cannot be parsed) are skipped with a warning and listed
@@ -135,15 +136,18 @@ def first_png(pane):
 
 
 def parameters(doc):
+    """All Parameter/Value tables of the report merged (the methods sections have small ones,
+    the appendix has the full list)."""
+    out = {}
     for w in re.finditer(r'<script type="application/json" data-for="htmlwidget-[^"]+">(\{"x":\{"tag".*?)</script>', doc, flags=re.S):
         try:
             d = json.loads(w.group(1))["x"]["tag"]["attribs"]["data"]
         except Exception:
             continue
-        if isinstance(d, dict) and "Parameter" in d:
+        if isinstance(d, dict) and "Parameter" in d and len(d) > 1:
             vcol = [k for k in d if k != "Parameter"][0]
-            return dict(zip(d["Parameter"], d[vcol]))
-    return {}
+            out.update(zip(d["Parameter"], d[vcol]))
+    return out
 
 
 def color(c, default="#888888"):
@@ -168,20 +172,100 @@ def panel_label(ax, letter, text):
 
 
 # --------------------------------------------------------------------------- panels
-def draw_pca(ax, pane, colour_by):
+def sample_table(doc):
+    """The report's sample table (section "Samples") as {column: values}, or {}."""
+    sec, _ = get_section(doc, r"^Samples$", 2)
+    if sec is None:
+        return {}
+    for w in widgets(sec):
+        try:
+            d = w["x"]["tag"]["attribs"]["data"]
+        except (KeyError, TypeError):
+            continue
+        if isinstance(d, dict):
+            return d
+    return {}
+
+
+def draw_pca(ax, pane, colour_by, shape_by=None, meta=None):
+    """PCA with colour by `colour_by` ("sample" or a variable, e.g. group) and marker shape by
+    `shape_by` (a variable, e.g. replicate, or None). Variables are taken from the report's PCA
+    or, failing that, from its sample table (column names are matched case-insensitively)."""
     x = plotly_2d(pane)
     lay = x["layout"]
-    for t in x["data"]:
-        if t.get("legendgroup", "").lower() != colour_by.lower():
-            continue
-        ax.scatter(t["x"], t["y"], s=22, color=color(t["marker"].get("color")),
-                   edgecolor=color(t["marker"].get("line", {}).get("color"), "k"),
-                   linewidth=0.5, label=t["name"], zorder=3)
+    meta = meta or {}
+    traces = [t for t in x["data"] if t.get("legendgroup")]
+    pcaVars = list(dict.fromkeys(t["legendgroup"] for t in traces))
+
+    # sample -> coordinates, in report order
+    pts = {}
+    for t in traces:
+        if t["legendgroup"] == pcaVars[0]:
+            for xx, yy, smp in zip(t["x"], t["y"], t.get("text", [])):
+                pts[smp] = (xx, yy)
+
+    def values_of(var):
+        """sample -> level of var, and report colours per level if the PCA has that variable."""
+        if var is None:
+            return None, {}
+        if var.lower() == "sample":
+            return {smp: smp for smp in pts}, {}
+        for v in pcaVars:
+            if v.lower() == var.lower():
+                vals, cols = {}, {}
+                for t in traces:
+                    if t["legendgroup"] == v:
+                        cols[t["name"]] = color(t["marker"].get("color"))
+                        for smp in t.get("text", []):
+                            vals[smp] = t["name"]
+                return vals, cols
+        smpCol = next((k for k in meta if k.lower() == "sample"), None)
+        col = next((k for k in meta if k.lower() == var.lower()), None)
+        if smpCol and col:
+            return dict(zip(meta[smpCol], [str(v) for v in meta[col]])), {}
+        print("  ! %r not found in the report (PCA: %s; sample table: %s)"
+              % (var, ", ".join(pcaVars), ", ".join(meta)))
+        return None, {}
+
+    cvals, ccols = values_of(colour_by)
+    svals, _ = values_of(shape_by)
+    if cvals is None:
+        cvals, ccols, colour_by = values_of(pcaVars[0]) + (pcaVars[0],)
+    clev = list(dict.fromkeys(cvals[s_] for s_ in pts if s_ in cvals))
+    slev = list(dict.fromkeys(svals[s_] for s_ in pts if s_ in svals)) if svals else []
+    cmap = plt.get_cmap("tab20" if len(clev) > 10 else "tab10")
+    colOf = {l: ccols.get(l, cmap(k % cmap.N)) for k, l in enumerate(clev)}
+    markers = ["o", "^", "s", "D", "v", "P", "X", "*"]
+    shpOf = {l: markers[k % len(markers)] for k, l in enumerate(slev)}
+
+    for smp, (xx, yy) in pts.items():
+        ax.scatter([xx], [yy], s=22, color=colOf.get(cvals.get(smp), "grey"),
+                   marker=shpOf.get(svals.get(smp), "o") if svals else "o",
+                   edgecolor="k", linewidth=0.4, zorder=3)
+
+    # one legend: colour levels, then shape levels
+    blank = Line2D([], [], ls="", marker="")
+    handles, labels = [blank], [colour_by.capitalize()]
+    for l in clev:
+        handles.append(Line2D([], [], ls="", marker="o", color=colOf[l], markeredgecolor="k", markeredgewidth=0.4, ms=4))
+        labels.append(l)
+    if slev:
+        handles.append(blank)
+        labels.append(shape_by.capitalize())
+        for l in slev:
+            handles.append(Line2D([], [], ls="", marker=shpOf[l], color="grey", markeredgecolor="k", markeredgewidth=0.4, ms=4))
+            labels.append(l)
+    many = len(labels) > 8
+    leg = ax.legend(handles, labels, frameon=False, loc="best", fontsize=4.3 if many else 5.5,
+                    ncol=2 if len(labels) > 12 else 1, handletextpad=0.2, borderaxespad=0.2)
+    for txt, lab in zip(leg.get_texts(), labels):
+        if lab in (colour_by.capitalize(), (shape_by or "").capitalize()):
+            txt.set_fontweight("bold")
+
     ax.axhline(0, color="#dddddd", lw=0.5, zorder=0)
     ax.axvline(0, color="#dddddd", lw=0.5, zorder=0)
     ax.set_xlabel(title_of(lay["xaxis"]["title"]))
     ax.set_ylabel(title_of(lay["yaxis"]["title"]))
-    ax.legend(frameon=False, title=colour_by.capitalize(), title_fontsize=6, loc="best", handletextpad=0.2)
     panel_label(ax, "A", "PCA")
 
 
@@ -204,15 +288,17 @@ def draw_pc_heatmap(ax, pane):
     h = w[0]["x"]
     mx = h["matrix"]
     nr, nc = mx["dim"]
-    vals = np.array([float(v) for v in mx["data"]]).reshape((nc, nr)).T  # column-major in R
-    img = np.array(Image.open(io.BytesIO(base64.b64decode(h["image"].split(",")[1]))).convert("RGB"))
-    if img.shape[:2] == (nc, nr):  # d3heatmap stores the image transposed
-        img = np.transpose(img, (1, 0, 2))
+    # d3heatmap stores both the values and the image pixels row by row (variable x PC),
+    # whatever width/height the png header claims
+    vals = np.array([float(v) for v in mx["data"]]).reshape((nr, nc))
+    img = np.asarray(Image.open(io.BytesIO(base64.b64decode(h["image"].split(",")[1]))).convert("RGB"))
+    img = img.reshape(-1, 3)[: nr * nc].reshape((nr, nc, 3))
     ax.imshow(img, aspect="auto", interpolation="nearest")
     for i in range(nr):
         for j in range(nc):
+            lum = (0.299 * img[i, j, 0] + 0.587 * img[i, j, 1] + 0.114 * img[i, j, 2]) / 255
             ax.text(j, i, "%.2g" % vals[i, j], ha="center", va="center", fontsize=5,
-                    color="white" if vals[i, j] < 0.05 else "black")
+                    color="white" if lum < 0.5 else "black")
     ax.set_xticks(range(nc))
     ax.set_xticklabels([htmllib.unescape(c) for c in mx["cols"]], rotation=55, ha="right", fontsize=5)
     ax.set_yticks(range(nr))
@@ -220,7 +306,7 @@ def draw_pc_heatmap(ax, pane):
     ax.tick_params(length=0)
     for s in ax.spines.values():
         s.set_visible(False)
-    panel_label(ax, "C", "PC / metadata association (p value; red = low)")
+    panel_label(ax, "C", "PC / metadata association (p value; red = most significant)")
 
 
 def draw_cluster(ax, pane):
@@ -296,28 +382,77 @@ def multicolour_text(ax, loc, xy, pieces, fontsize=8):
     ax.add_artist(box)
 
 
-def draw_volcano(ax, vol, cnt):
+def auto_ymax(ys, max_out=5):
+    """Cap for the y axis that leaves out only isolated extreme points: the top point is
+    dropped while it is more than twice the next highest (at most max_out points).
+    Returns None if nothing needs capping."""
+    v = sorted((y for y in ys if y is not None and np.isfinite(y)), reverse=True)
+    k = 0
+    while k < min(max_out, len(v) - 1) and v[k] > 2 * v[k + 1]:
+        k += 1
+    return 1.1 * v[k] if k > 0 else None
+
+
+def draw_volcano(ax, vol, cnt, xlim=None, ymax="auto"):
+    """xlim: symmetric x limit (None = the report's range); ymax: y cap, "auto" (only
+    isolated extreme points), a number, or None. Points beyond the axes are drawn at the
+    edge as open triangles; the ones above the y cap are labelled with their gene ID."""
     lay = vol["layout"]
-    for t in vol["data"]:
+    pts = [t for t in vol["data"] if t.get("mode") == "markers" and isinstance(t.get("x"), list)
+           and t["x"] and t.get("name", "") != "unselected rows"]
+    if xlim is None:
+        xr = lay["xaxis"].get("range")
+    else:
+        xr = [-xlim, xlim]
+    if ymax == "auto":
+        ymax = auto_ymax([y for t in pts for y in t["y"]])
+
+    clipped = False
+    for t in pts:
         nm = t.get("name", "")
-        if t.get("mode") == "markers" and isinstance(t.get("x"), list) and t["x"] and nm != "unselected rows":
-            ax.scatter(t["x"], t["y"], s=3 if nm == "Not significant" else 5, color=color(t["marker"]["color"]),
-                       linewidth=0, label=nm, rasterized=True, zorder=2 if nm == "Not significant" else 3)
-        elif t.get("mode") == "lines" and isinstance(t.get("x"), list):
+        col = color(t["marker"]["color"])
+        x = np.array([np.nan if v is None else v for v in t["x"]], float)
+        y = np.array([np.nan if v is None else v for v in t["y"]], float)
+        outx = (np.abs(x) > xr[1]) if xr else np.zeros(len(x), bool)
+        outy = (y > ymax) if ymax else np.zeros(len(y), bool)
+        inside = ~(outx | outy)
+        z = 2 if nm == "Not significant" else 3
+        ax.scatter(x[inside], y[inside], s=3 if nm == "Not significant" else 5, color=col,
+                   linewidth=0, label=nm, rasterized=True, zorder=z)
+        if (outx | outy).any():
+            clipped = True
+            for k in np.where(outx | outy)[0]:
+                xc = np.clip(x[k], xr[0] * 0.985, xr[1] * 0.985) if xr else x[k]
+                yc = min(y[k], ymax * 0.985) if ymax else y[k]
+                mk = "^" if outy[k] else (">" if x[k] > 0 else "<")
+                ax.scatter([xc], [yc], s=14, marker=mk, facecolors="none", edgecolors=col, linewidths=0.7, zorder=4)
+                if outy[k]:
+                    lab = t.get("text", [None] * len(x))[k]
+                    ax.annotate("%s (%.0f)" % (lab, y[k]) if lab else "%.0f" % y[k], (xc, yc), xytext=(4, -12),
+                                textcoords="offset points", fontsize=4.5, color="#333333", va="top",
+                                ha="left" if xc < 0 else "right")
+    for t in vol["data"]:
+        if t.get("mode") == "lines" and isinstance(t.get("x"), list):
             ln = t.get("line", {})
-            ax.plot(t["x"], t["y"], color="k", lw=0.6,
-                    ls={"dash": "--", "dot": ":", "solid": "-"}.get(ln.get("dash", "solid"), "-"),
-                    label=nm if nm.startswith("padj") else None, zorder=1)
-    xr = lay["xaxis"].get("range")
+            nm = t.get("name", "")
+            ls = {"dash": "--", "dot": ":", "solid": "-"}.get(ln.get("dash", "solid"), "-")
+            if len(set(t["y"])) == 1:   # horizontal threshold line: span the whole axis
+                ax.axhline(t["y"][0], color="k", lw=0.6, ls=ls, label=nm if nm.startswith("padj") else None, zorder=1)
+            else:
+                ax.plot(t["x"], t["y"], color="k", lw=0.6, ls=ls,
+                        label=nm if nm.startswith("padj") else None, zorder=1)
     if xr:
         ax.set_xlim(*xr)
-    ax.set_ylim(bottom=0)
+    if ymax:
+        ax.set_ylim(0, ymax)
+    else:
+        ax.set_ylim(bottom=0)
     xt = title_of(lay["xaxis"]["title"])
     m = re.match(r"higher in (.+?)\s+<<.*>>\s+higher in (.+)$", xt.strip())
     ax.set_xlabel("log2 fold change")
     if m:
-        ax.annotate("← higher in %s" % m.group(1), (0, -0.2), xycoords="axes fraction", ha="left", va="top", fontsize=6)
-        ax.annotate("higher in %s →" % m.group(2), (1, -0.2), xycoords="axes fraction", ha="right", va="top", fontsize=6)
+        ax.annotate("\u2190 higher in %s" % m.group(1), (0, -0.2), xycoords="axes fraction", ha="left", va="top", fontsize=6)
+        ax.annotate("higher in %s \u2192" % m.group(2), (1, -0.2), xycoords="axes fraction", ha="right", va="top", fontsize=6)
     ax.set_ylabel("-log10 adjusted p")
     red, blue = "#b2182b", "#2166ac"
     multicolour_text(ax, "upper left", (0.02, 0.985),
@@ -326,13 +461,14 @@ def draw_volcano(ax, vol, cnt):
                      [("%d up " % cnt["up_fc"], red), ("(%d)" % cnt["up"], blue), (" \u25B2", red)])
     ax.legend(frameon=True, framealpha=0.9, edgecolor="none", loc="upper center", bbox_to_anchor=(0.5, 0.9),
               markerscale=1.5, handletextpad=0.2)
-    panel_label(ax, "F", "Volcano plot (adjusted p)")
+    panel_label(ax, "F", "Volcano plot (adjusted p)" + ("; open triangles = beyond axis" if clipped else ""))
 
 
 # --------------------------------------------------------------------------- main
-def pages_for_report(doc, pdf, assay, pca_colour, outlier_var, label=None):
+def pages_for_report(doc, pdf, assay, pca_colour, outlier_var, label=None, pca_shape=None, volcano=None):
     """Add one page per contrast of one report to an open PdfPages. Returns number of pages."""
     params = parameters(doc)
+    meta = sample_table(doc)
     mad = params.get("exploratory_mad_threshold")
     try:
         mad = float(mad)
@@ -382,12 +518,15 @@ def pages_for_report(doc, pdf, assay, pca_colour, outlier_var, label=None):
         axE = fig.add_subplot(gs_r[0])
         axF = fig.add_subplot(gs_r[1])
 
-        draw_pca(axA, pick_pane(pca_sec, assay), pca_colour)
+        draw_pca(axA, pick_pane(pca_sec, assay), pca_colour, pca_shape, meta)
         draw_scree(axB, pick_pane(scree_sec, assay))
         draw_pc_heatmap(axC, pcmeta_sec)
         draw_cluster(axD, pick_pane(clus_sec, assay))
         draw_outliers(axE, pick_pane(out_sec, outlier_var), mad, outlier_var)
-        draw_volcano(axF, vol, cnt)
+        volcano = volcano or {}
+        shrunk = str(params.get("deseq2_shrink_lfc", "")).upper() in ("TRUE", "T", "1")
+        vx = volcano.get("xlim_shrink" if shrunk else "xlim_noshrink")
+        draw_volcano(axF, vol, cnt, xlim=vx if vx else None, ymax=volcano.get("ymax", "auto"))
 
         # header: paramset name (if given), contrast, details, counts
         y = 0.975
@@ -437,8 +576,18 @@ def main():
     ap.add_argument("-o", "--output", help="output PDF")
     ap.add_argument("--assay", default="Variance stabilised",
                     help="tab used for PCA / scree / clustering heatmap (default: %(default)s)")
-    ap.add_argument("--pca-colour", default="group", help="PCA colouring: group (default) or lane/other variable")
+    ap.add_argument("--pca-colour", default="group",
+                    help="PCA colour: a variable such as group (default) or lane, or sample")
+    ap.add_argument("--pca-shape", default="replicate",
+                    help="PCA marker shape: a variable such as replicate (default) or lane, or none")
     ap.add_argument("--outlier-variable", default="group", help="outlier tab to use (default: group)")
+    ap.add_argument("--volcano-xlim-shrink", type=float, default=1.0,
+                    help="volcano x axis +/- limit for runs with LFC shrinkage (0 = report's range; default %(default)s)")
+    ap.add_argument("--volcano-xlim-noshrink", type=float, default=2.0,
+                    help="volcano x axis +/- limit for runs without shrinkage (0 = report's range; default %(default)s)")
+    ap.add_argument("--volcano-ymax", default="auto",
+                    help="volcano y axis cap: auto (only isolated extreme points are capped; default), "
+                         "a number, or none")
     a = ap.parse_args()
 
     import os
@@ -462,6 +611,9 @@ def main():
     else:
         ap.error("give a report .html, or --params and --workdir")
 
+    ym = a.volcano_ymax.lower()
+    volcano = dict(xlim_shrink=a.volcano_xlim_shrink, xlim_noshrink=a.volcano_xlim_noshrink,
+                   ymax=None if ym == "none" else ("auto" if ym == "auto" else float(ym)))
     skipped, pages = [], 0
     with PdfPages(out) as pdf:
         for label, path in jobs:
@@ -472,7 +624,8 @@ def main():
                 continue
             try:
                 doc = open(path, encoding="utf-8", errors="replace").read()
-                pages += pages_for_report(doc, pdf, a.assay, a.pca_colour, a.outlier_variable, label)
+                pages += pages_for_report(doc, pdf, a.assay, a.pca_colour, a.outlier_variable, label,
+                                          None if a.pca_shape.lower() == "none" else a.pca_shape, volcano)
             except (SystemExit, Exception) as e:  # keep going with the other runs
                 print("  ! could not summarise, skipped:", e)
                 skipped.append((label, str(e)))

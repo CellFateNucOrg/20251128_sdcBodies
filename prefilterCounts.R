@@ -121,7 +121,7 @@ if(!is.null(outliers)){
 toCluster <- function(p) sub("^/Volumes/meister\\.data", "/mnt/meister.data", p)
 
 minAbund=10L
-minSamples=3L
+minSamples=nrow(samplesheet)
 suffixes <- c("", "_pc", "_pc_noOsc")
 
 paramsets <- list(); i <- 0
@@ -146,8 +146,6 @@ write_yaml(paramsets, paste0(scriptDir,"/params.yml"),
 
 
 # create params_raptor.yaml --------
-minAbund=10L
-minSamples=3L
 suffixes <- c("", "_pc")
 
 paramsets_raptor <- list(); i <- 0
@@ -176,7 +174,7 @@ write_yaml(paramsets_raptor, paste0(scriptDir,"/params_raptor.yml"),
 
 if (length(outliers) > 0) {
   minAbund=10L
-  minSamples=3L
+  minSamples=nrow(noOut_samplesheet)
   suffixes <- c("_noOut", "_pc_noOut", "_pc_noOsc_noOut")
 
   paramsets_noOut <- list(); i <- 0
