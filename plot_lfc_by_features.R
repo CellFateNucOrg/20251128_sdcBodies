@@ -27,7 +27,7 @@ theme_set(
 serverPath <- "/Volumes/meister.data"
 #serverPath <- "Z:/MeisterLab"
 
-workDir <- paste0(serverPath, "/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1")
+workDir <- paste0(serverPath, "/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1")
 setwd(workDir)
 
 source(file.path(workDir, "scripts/functions_exploratory_analysis.R"))   # tableToGranges()

@@ -11,15 +11,16 @@ options(width=1e4)
 serverPath="/Volumes/meister.data"
 #serverPath="X:"
 
-workDir=paste0(serverPath,"/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1")
+workDir=paste0(serverPath,"/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1")
 scriptDir=paste0(workDir,"/scripts")
 setwd(workDir)
 
 samplesheet<-read.csv(paste0(workDir,"/fileList.csv"), header=T, stringsAsFactors = F)
-
+minAbund=10
+minSamples=nrow(samplesheet)
 
 ## params for filtering -----
-outliers<-NULL  # vector of outlier samples or NULL
+outliers<-c("IPTG_1486_3_L2","IPTG_1486_3_L7") #NULL  # vector of outlier samples or NULL
 
 
 ## gtf - load to find protein coding genes
@@ -118,10 +119,8 @@ if(!is.null(outliers)){
 
 
 # create params.yaml --------
-toCluster <- function(p) sub("^/Volumes/meister\\.data", "/mnt/meister.data", p)
+toCluster <- function(p) sub("/Volumes/meister\\.data", "/mnt/meister.data", p)
 
-minAbund=10L
-minSamples=nrow(samplesheet)
 suffixes <- c("", "_pc", "_pc_noOsc")
 
 paramsets <- list(); i <- 0
@@ -173,7 +172,6 @@ write_yaml(paramsets_raptor, paste0(scriptDir,"/params_raptor.yml"),
 ## param.yaml for noOutliers -----
 
 if (length(outliers) > 0) {
-  minAbund=10L
   minSamples=nrow(noOut_samplesheet)
   suffixes <- c("_noOut", "_pc_noOut", "_pc_noOsc_noOut")
 
@@ -199,7 +197,7 @@ if (length(outliers) > 0) {
            handlers = list(logical = verbatim_logical))
 }
 
-## params_raptor_noOut.yml aptor runs without outliers -------
+## params_raptor_noOut.yml raptor runs without outliers -------
 if (length(outliers) > 0) {
   suffixes <- c("_noOut", "_pc_noOut")
 

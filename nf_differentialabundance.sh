@@ -13,7 +13,7 @@ genomeVer=WS298
 genomeDir=/mnt/meister.data/publicData/genomes/${genomeVer}
 gtfFile=${genomeDir}/c_elegans.PRJNA13758.${genomeVer}.canonical_geneset.gtf
 
-WORK_DIR=/mnt/meister.data/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1
+WORK_DIR=/mnt/meister.data/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1
 RESULTS_DIR=$WORK_DIR/diffabund
 mkdir -p $RESULTS_DIR
 CONFIG_FILE=/mnt/meister.data/nf-core/unibe_izb_apptainer.config
@@ -42,7 +42,7 @@ nextflow run nf-core/differentialabundance -profile rnaseq,apptainer \
 
 
 ## differntial abundance runs with all samples, +-lfc, +-protein_coding +-oscillating using raptor age estimations after removing outlier samples
-removeOutliers=false
+removeOutliers=true
 if $removeOutliers; then
   PARAMSETS=$(sed -n 's/^[[:space:]-]*paramset_name:[[:space:]]*//p' params_noOut.yml | tr -d "\"'" | paste -sd, -)
   nextflow run nf-core/differentialabundance -profile rnaseq,apptainer \
@@ -58,8 +58,8 @@ if $removeOutliers; then
   nextflow run nf-core/differentialabundance -profile rnaseq,apptainer \
         --input ${WORK_DIR}/samplesheet_raptor_noOut.csv --outdir $RESULTS_DIR -c $CONFIG_FILE -r 2.0.0 \
         --gtf $gtfFile   \
-        --contrasts ${WORK_DIR}/contrasts_raptor.yaml \
-        --paramsheet params_raptor.yml \
+        --contrasts ${WORK_DIR}/contrasts_raptor.yml \
+        --paramsheet params_raptor_noOut.yml \
         --paramset_name "$PARAMSETS"
 fi
 

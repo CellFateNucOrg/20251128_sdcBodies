@@ -25,15 +25,20 @@ theme_set(
 
 serverPath="/Volumes/meister.data"
 #serverPath="Z:/MeisterLab"
-workDir=paste0(serverPath,"/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1")
+workDir=paste0(serverPath,"/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1")
+
+contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
+samplesheet <- read.csv(file.path(workDir, "samplesheet.csv"),header=T)
 minAbund=10
-minSamples=3
+minSamples=nrow(samplesheet)
+outliers<-c("IPTG_1486_3_L2","IPTG_1486_3_L7") #NULL  # vector of outlier samples or NULL
+
 # age estimation parameters:
-prior=27 #NULL # expected age in hours (at 20C) - try 27-28 since we grow at 22C, or look at plots with NULL first
+prior=17.5 #NULL # expected age in hours (at 20C) - try 27-28 since we grow at 22C, or look at plots with NULL first
 prior.params=10 #NULL # wide SD, usually i use 10 to help confine it to same larval stage, but not bias it too much. use NULL for initial plot
 refName<-"Cel_larval" # could also try "Cel_larv_YA" - seems better age estimation with NULL prior, but worse corelation overall.
 
-runName="03_noShrink_minAbund10_minSamples3_pc"
+runName=paste0("01_noShrink_minAbund",minAbund,"_minSamples",minSamples)
 
 prefix=""
 genomeVer<-"WS298"
@@ -45,11 +50,10 @@ col.palette1 <- c('grey20', 'firebrick', 'royalblue', 'forestgreen')
 #mapMethod="salmon"
 #prefix=paste0(mapMethod,"_raptor_age_deseq2_pc_nomito_lfcShrink_")
 
-contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
-samplesheet <- read.csv(file.path(workDir, "samplesheet.csv"),header=T)
 
-counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts_pc.tsv"))
-tpm<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_tpm_pc.tsv"))
+
+counts<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_counts.tsv"))
+tpm<-read.delim(paste0(workDir,"/star_salmon/salmon.merged.gene_tpm.tsv"))
 
 
 ss<-read.csv(paste0(workDir,"/samplesheet.csv"), header=T, stringsAsFactors = T)
@@ -86,7 +90,7 @@ ref <- prepare_refdata(refName, "wormRef", 600)
 
 qs=list()
 
-counts<-counts[rowSums(counts[, c(-1,-2)]>minAbund)>minSamples,]
+counts<-counts[rowSums(counts[, c(-1,-2)]>=minAbund)>=minSamples,]
 
 qs$count<-round(counts[, c(-1,-2)],0)
 row.names(qs$count)<-counts$gene_id
@@ -165,6 +169,15 @@ qs$pdat$ageZnorm<- (qs$pdat$age-mean(qs$pdat$age))/sd(qs$pdat$age)
 write.csv(qs$pdat,paste0(workDir,"/samplesheet_raptor.csv"),
           row.names=F, quote=F)
 
+if(!is.null(outliers)){
+  idx<-qs$pdat$sample %in% outliers
+  noOutss<-qs$pdat[!idx,]
+  write.csv(noOutss,paste0(workDir,"/samplesheet_raptor_noOut.csv"),
+            row.names=F, quote=F)
+}
+
+##### optional ######
+
 
 ae_X
 
@@ -182,11 +195,8 @@ for(c in 1:nrow(contrasts)){
     res <- lfcShrink(dd0,contrast=c("group",contrasts$target[c],contrasts$reference[c]),alpha=0.05,type="ashr")
   }
   summary(res)
-  write.table(res, file=paste0(workDir,runName,"/tables/differential/",prefix,contrasts$id[c],".deseq2.results.tsv"), sep="\t", quote=F)
+  write.table(res, file=paste0(workDir,"/diffabund/custom/raptor/",runName,"/",contrasts$id[c],".deseq2.results.tsv"), sep="\t", quote=F)
 }
-
-
-
 
 
 vsd <- vst(dd0, blind=FALSE)
@@ -194,9 +204,9 @@ p1<-plotPCA(vsd, intgroup=c("group"))
 p2<-plotPCA(vsd, intgroup=c("group"),pcsToUse=3:4)
 p3<-plotPCA(vsd, intgroup=c("group"),pcsToUse=5:6)
 p<-ggarrange(p1,p2,p3,nrow=3)
-ggsave(paste0(workDir,runName,"/plots/",prefix,"_PCA.pdf"),p,height=29, width=19, units="cm")
+ggsave(paste0(workDir,"/diffabund/custom/raptor/PCA.pdf"),p,height=29, width=19, units="cm")
 
 
 file.copy(from=paste0(workDir,"/raptor_deseq2.R"),
-          to=paste0(workDir,runName,"/raptor_deseq2.R"),
+          to=paste0(workDir,"/diffabund/custom/raptor/raptor_deseq2.R"),
           overwrite=TRUE)
