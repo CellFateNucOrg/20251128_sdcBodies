@@ -35,11 +35,13 @@ contrasts<-data.frame(id=c("PWM1486_Bound_vs_IPTG"),
 
 write.csv(contrasts,file=paste0(workDir,"/contrasts.csv"),quote=F,row.names=F)
 
-
+q <- function(x) { attr(x, "quoted") <- TRUE; x }
 contrastsyml<-list(contrasts=list(
-  id = "PWM1486_Bound_vs_IPTG",
-  formula = "~ ageZnorm + replicate + group",
-  make_contrasts_str = "groupNO_PMW1486"
+  list(
+    id = "PWM1486_Bound_vs_IPTG",
+    formula = q("~ ageZnorm + replicate + group"),
+    make_contrasts_str = q("groupNO_PMW1486")
+    )
   )
 )
 

@@ -33,13 +33,32 @@ setwd(workDir)
 source(file.path(workDir, "scripts/functions_exploratory_analysis.R"))   # tableToGranges()
 source(file.path(workDir, "scripts/functions_lfc_feature_plots.R"))
 
+# y axis limits: defaults for all runs, which a run set below can override
+ylimitsShrink   <- c(-1, 1)   # LFC plots of runs with LFC shrinkage
+ylimitsNoShrink <- c(-2, 2)   # ... and of runs without shrinkage ("noShrink" in runName)
+ylimitsMAD      <- c(-2, 2)   # MAD-scaled binned plots (LFC / MAD)
+madChroms       <- c("chrI")  # chromosomes that also get a binned plot of LFC / MAD of each contrast (NULL = none)
+
+outliers <- c("IPTG_1486_3_L2", "IPTG_1486_3_L7")   # outlier samples, or NULL (then no noOut runs)
+
 # which paramsheet goes with which contrasts file and samplesheet (relative to workDir).
 # Contrasts can be the csv or a YAML with formula contrasts; the samplesheet is used for the
 # lacO column (sites carried by each contrast's target group).
+# Optional per set: ylimShrink, ylimNoShrink, ylimMAD (override the defaults above).
 runSets <- list(
-  list(params = "scripts/params.yml",        contrasts = "contrasts.csv",         samplesheet = "samplesheet.csv"),
+  list(params = "scripts/params.yml",        contrasts = "contrasts.csv",        samplesheet = "samplesheet.csv"),
   list(params = "scripts/params_raptor.yml", contrasts = "contrasts_raptor.yml", samplesheet = "samplesheet_raptor.csv")
 )
+if (length(outliers) > 0) {
+  runSets <- c(runSets, list(
+    list(params = "scripts/params_noOut.yml",        contrasts = "contrasts.csv",        samplesheet = "samplesheet_noOut.csv",
+         ylimShrink = c(-0.5, 0.5), ylimNoShrink = c(-1, 1), ylimMAD = c(-2, 2)),
+    list(params = "scripts/params_raptor_noOut.yml", contrasts = "contrasts_raptor.yml", samplesheet = "samplesheet_raptor_noOut.csv",
+         ylimShrink = c(-0.5, 0.5), ylimNoShrink = c(-1, 1), ylimMAD = c(-2, 2))
+  ))
+}
+
+
 chrRegionsFile  <- file.path(serverPath, "publicData/various/Rockman_Kruglyak_2009_armsVcenter/celegans_rockman_kruglyak_2009_table1_domains_ce11_bp.tsv")
 anchorsFile     <- file.path(serverPath, "publicData/various/rexSites_Das2023/382_X.eigs_cis.vecs_37peaks_p0.65_correct.bed")
 targetsFile     <- file.path(workDir, "scripts/lacO_sites.bed")   # targets for the binned and zoomed plots
@@ -52,16 +71,17 @@ targetsFile     <- file.path(workDir, "scripts/lacO_sites.bed")   # targets for 
 binWidth     <- 3e5
 regionSize   <- 3e5
 padjCutoff   <- 0.05
-ylimitsShrink   <- c(-0.25, 0.25)   # y axis of all LFC plots for runs with LFC shrinkage
-ylimitsNoShrink <- c(-0.75, 0.75)   # ... and for runs without shrinkage ("noShrink" in runName)
 excludeChroms   <- c("chrM")      # genes on these chromosomes are left out of all plots and tables
 targetChroms <- NULL   # NULL = every chromosome with a site in targetsFile, or e.g. c("chrI", "chrV")
 
 # data shared by all runs ----------------------------------------------------
-runInfo <- do.call(rbind, lapply(runSets, function(s) data.frame(
-  runName     = sapply(read_yaml(file.path(workDir, s$params)), `[[`, "paramset_name"),
-  contrasts   = file.path(workDir, s$contrasts),
-  samplesheet = file.path(workDir, s$samplesheet))))
+runInfo <- do.call(rbind, lapply(seq_along(runSets), function(i) {
+  s <- runSets[[i]]
+  data.frame(runName     = sapply(read_yaml(file.path(workDir, s$params)), `[[`, "paramset_name"),
+             contrasts   = file.path(workDir, s$contrasts),
+             samplesheet = file.path(workDir, s$samplesheet),
+             set         = i)
+}))
 runInfo <- runInfo[!duplicated(runInfo$runName), ]
 
 si <- seqinfo(Celegans)
@@ -112,7 +132,11 @@ for (k in seq_len(nrow(runInfo))) {
     next
   }
   results <- readRDS(rdsFile)
-  ylimits <- ylimits_for(runName, shrink = ylimitsShrink, noShrink = ylimitsNoShrink)
+  rs <- runSets[[runInfo$set[k]]]
+  orDefault <- function(x, d) if (is.null(x)) d else x
+  ylimits <- ylimits_for(runName, shrink = orDefault(rs$ylimShrink, ylimitsShrink),
+                         noShrink = orDefault(rs$ylimNoShrink, ylimitsNoShrink))
+  ylimMAD <- orDefault(rs$ylimMAD, ylimitsMAD)
 
   gr <- annotate_features(results, chrRegions, anchors, tiles)
   gr <- gr[!as.character(seqnames(gr)) %in% excludeChroms]
@@ -157,6 +181,18 @@ for (k in seq_len(nrow(runInfo))) {
   for (chrom in targetChroms) {
     output(plot_binned(df, chrom, binWidth, ylimits, paste0(chrom, " ", binWidth / 1e3, "kb bins"), runName),
            "byChrRegion", paste0(chrom, "_", binWidth / 1e3, "kb.pdf"), width = 32, height = 5 + 7 * nC)
+  }
+
+  # binned plots of LFC / MAD (MAD of all tested genes of each contrast) for madChroms
+  if (length(madChroms) > 0) {
+    dfMad <- scale_by_mad(df)
+    madTxt <- paste(names(attr(dfMad, "mad")), signif(attr(dfMad, "mad"), 3), sep = ": ", collapse = ", ")
+    message("   MAD of LFC: ", madTxt)
+    for (chrom in madChroms) {
+      output(plot_binned(dfMad, chrom, binWidth, ylimMAD, paste0(chrom, " ", binWidth / 1e3, "kb bins (LFC / MAD)"),
+                         paste0(runName, " | MAD ", madTxt), ylab = "LFC / MAD"),
+             "byChrRegion", paste0(chrom, "_", binWidth / 1e3, "kb_MADscaled.pdf"), width = 32, height = 5 + 7 * nC)
+    }
   }
 
   if (length(targetChroms) > 0) {

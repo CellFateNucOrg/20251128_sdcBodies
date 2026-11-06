@@ -16,14 +16,26 @@ serverPath="/Volumes/meister.data"
 workDir=paste0(serverPath,"/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1")
 
 setwd(workDir)
-
+outliers<-c("IPTG_1486_3_L2","IPTG_1486_3_L7")
 # which paramsheet goes with which contrasts file (relative to workDir); the contrasts file
 # can be the csv or the pipeline YAML (e.g. with formula contrasts)
+runSets <- list(
+  list(params = "scripts/params.yml",              contrasts = "contrasts.csv",        samplesheet = "samplesheet.csv"),
+  list(params = "scripts/params_raptor.yml",       contrasts = "contrasts_raptor.yml", samplesheet = "samplesheet_raptor.csv"),
+  list(params = "scripts/params_noOut.yml",        contrasts = "contrasts.csv",        samplesheet = "samplesheet_noOut.csv"),
+  list(params = "scripts/params_raptor_noOut.yml", contrasts = "contrasts_raptor.yml", samplesheet = "samplesheet_raptor_noOut.csv")
+)
+
 runSets <- list(
   list(params = "scripts/params.yml",        contrasts = "contrasts.csv"),
   list(params = "scripts/params_raptor.yml", contrasts = "contrasts_raptor.yml")
 )
-
+if (length(outliers>0)) {
+  runSets <- c(runSets, list(
+    list(params = "scripts/params_noOut.yml",        contrasts = "contrasts.csv"),
+    list(params = "scripts/params_raptor_noOut.yml", contrasts = "contrasts_raptor.yml")
+  ))
+}
 
 ### functions ------
 # contrast ids from a contrasts csv/tsv or YAML file, in file order

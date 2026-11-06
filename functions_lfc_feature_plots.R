@@ -41,6 +41,17 @@ save_multipage <- function(pages, file) {
   invisible(file)
 }
 
+# LFC divided by the MAD of the LFCs of all tested genes, separately per contrast (R's mad(),
+# scaled to match the SD for normally distributed values). The MADs are returned as
+# attribute "mad" (one per contrast).
+scale_by_mad <- function(df) {
+  t <- tested_genes(df)
+  mads <- tapply(t$log2FoldChange, as.character(t$group), mad, na.rm = TRUE)
+  df$log2FoldChange <- df$log2FoldChange / mads[as.character(df$group)]
+  attr(df, "mad") <- mads
+  df
+}
+
 # import a bed file and give it UCSC names and the genome's seqinfo (needed by trim())
 load_sites <- function(file, si) {
   x <- import(file)
@@ -186,7 +197,7 @@ annotate_features <- function(results, chrRegions, anchors, tiles) {
 # boxplot of LFC per level of `xvar` (e.g. "seqnames", "chr_region", "anchor"),
 # with gene counts and FDR-adjusted Wilcoxon p values of each level vs all genes.
 # One panel per contrast, side by side.
-boxplot_lfc <- function(df, xvar, ylimits, title, xlab, subtitle = NULL) {
+boxplot_lfc <- function(df, xvar, ylimits, title, xlab, subtitle = NULL, ylab = "Log2 Fold Change") {
   df <- tested_genes(df)
   df <- df[!is.na(df[[xvar]]), ]
   df[[xvar]] <- droplevels(factor(df[[xvar]]))
@@ -207,7 +218,7 @@ boxplot_lfc <- function(df, xvar, ylimits, title, xlab, subtitle = NULL) {
     facet_wrap(~group, nrow = 1) +
     coord_cartesian(ylim = ylimits) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-    labs(title = title, subtitle = subtitle, x = xlab, y = "Log2 Fold Change") +
+    labs(title = title, subtitle = subtitle, x = xlab, y = ylab) +
     geom_text(data = obsCounts, aes(label = count, y = ylimits[1]), color = "blue", angle = 90) +
     stat_pvalue_manual(data = wilcoxt, label = "p.adj.format", y.position = ylimits[2] * 0.20,
                        remove.bracket = TRUE, angle = 90, hide.ns = TRUE, vjust = 0.5)
@@ -215,7 +226,8 @@ boxplot_lfc <- function(df, xvar, ylimits, title, xlab, subtitle = NULL) {
 
 # boxplot of LFC in genome bins along one chromosome; bins containing a target are red
 # (per contrast if the target column was set with flag_target_bins())
-plot_binned <- function(df, chrom, binWidth, ylimits, title, subtitle = NULL, labelEvery = 5) {
+plot_binned <- function(df, chrom, binWidth, ylimits, title, subtitle = NULL, labelEvery = 5,
+                        ylab = "Log2 Fold Change") {
   sub <- tested_genes(df[as.character(df$seqnames) == chrom, ])
   if (nrow(sub) == 0) stop("no tested genes on ", chrom)
   sub$bin <- factor(sub$binStart, levels = sort(unique(sub$binStart)))
@@ -239,7 +251,7 @@ plot_binned <- function(df, chrom, binWidth, ylimits, title, subtitle = NULL, la
     geom_hline(yintercept = 0, alpha = 0.3) +
     scale_x_discrete(name = paste0(chrom, " (Mb, bin start)"), breaks = brks,
                      labels = (as.numeric(brks) - 1) / 1e6) +   # tile starts are 1-based
-    labs(title = title, subtitle = subtitle, y = "Log2 Fold Change") +
+    labs(title = title, subtitle = subtitle, y = ylab) +
     geom_text(data = obsCounts, aes(label = count, y = ylimits[1] * 0.9), color = "blue", angle = 90, size = 4) +
     stat_pvalue_manual(data = wilcoxt, label = "p.adj.format", y.position = ylimits[2] * 0.5,
                        remove.bracket = TRUE, angle = 90, hide.ns = TRUE, size = 3)
@@ -249,7 +261,8 @@ plot_binned <- function(df, chrom, binWidth, ylimits, title, subtitle = NULL, la
 # chromosome. Targets are marked with a dashed line and a square. With siteMap (see
 # sites_per_contrast) the square is red in contrasts whose strain carries the site and
 # an empty frame otherwise; without it, squares are coloured by site name if the bed file has one.
-plot_zoom <- function(gr, targets, chrom, regionSize, xlim = NULL, ylim = NULL, siteMap = NULL) {
+plot_zoom <- function(gr, targets, chrom, regionSize, xlim = NULL, ylim = NULL, siteMap = NULL,
+                      ylab = "Log2 Fold Change") {
   t <- targets[as.character(seqnames(targets)) == chrom]
   if (length(t) == 0) stop("no targets on ", chrom)
   win <- trim(resize(t, width = regionSize, fix = "center"))
@@ -263,7 +276,7 @@ plot_zoom <- function(gr, targets, chrom, regionSize, xlim = NULL, ylim = NULL, 
     geom_hline(yintercept = 0) +
     geom_vline(data = tdf, aes(xintercept = start / 1e6), linetype = "dashed", color = "grey") +
     facet_grid(group ~ .) +
-    labs(x = paste0(chrom, " genomic position (Mb)"), y = "Log2 Fold Change")
+    labs(x = paste0(chrom, " genomic position (Mb)"), y = ylab)
 
   # site name at the top of the first panel, next to its dashed line
   if ("name" %in% colnames(tdf) && any(!is.na(tdf$name))) {
@@ -302,7 +315,7 @@ plot_zoom <- function(gr, targets, chrom, regionSize, xlim = NULL, ylim = NULL, 
 # one zoom plot per chromosome, all with the same scales: the same y range, and x windows
 # of the same width (the widest window, e.g. a chromosome with two targets), centred on
 # each chromosome's targets
-plot_zoom_panels <- function(gr, targets, chroms, regionSize, siteMap = NULL) {
+plot_zoom_panels <- function(gr, targets, chroms, regionSize, siteMap = NULL, ylab = "Log2 Fold Change") {
   wins <- lapply(chroms, function(ch)
     trim(resize(targets[as.character(seqnames(targets)) == ch], width = regionSize, fix = "center")))
   span <- max(sapply(wins, function(w) max(end(w)) - min(start(w))))
@@ -311,7 +324,7 @@ plot_zoom_panels <- function(gr, targets, chroms, regionSize, siteMap = NULL) {
   lapply(seq_along(chroms), function(i) {
     mid <- (min(start(wins[[i]])) + max(end(wins[[i]]))) / 2
     plot_zoom(gr, targets, chroms[i], regionSize,
-              xlim = (mid + c(-span, span) / 2) / 1e6, ylim = ylim, siteMap = siteMap)
+              xlim = (mid + c(-span, span) / 2) / 1e6, ylim = ylim, siteMap = siteMap, ylab = ylab)
   })
 }
 

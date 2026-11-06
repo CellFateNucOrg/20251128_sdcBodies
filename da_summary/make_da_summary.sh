@@ -5,7 +5,14 @@
 
 
 
-WORK_DIR=/mnt/meister.data/sinem/sequencing/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1
+WORK_DIR=/mnt/meister.data/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1
 RESULTS_DIR=$WORK_DIR/diffabund
 
-pixi run summarise --params ../params.yml ../params_raptor.yml --workdir $WORK_DIR -o $RESULTS_DIR/da_summary.pdf
+
+PARAMFILES=( $WORK_DIR/params.yml $WORK_DIR/params_raptor.yml )
+removeOutliers=true
+if $removeOutliers; then
+ PARAMFILES=( ../params.yml ../params_raptor.yml ../params_noOut.yml ../params_raptor_noOut.yml)
+fi
+
+pixi run summarise --params ${PARAMFILES[@]}  --workdir $WORK_DIR -o $RESULTS_DIR/da_summary.pdf
