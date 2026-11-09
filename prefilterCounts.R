@@ -11,16 +11,16 @@ options(width=1e4)
 serverPath="/Volumes/meister.data"
 #serverPath="X:"
 
-workDir=paste0(serverPath,"/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1")
+workDir=paste0(serverPath,"/sinem/sequencing/20251118_Sinem_sdcBodies")
 scriptDir=paste0(workDir,"/scripts")
 setwd(workDir)
 
-samplesheet<-read.csv(paste0(workDir,"/fileList.csv"), header=T, stringsAsFactors = F)
+samplesheet<-read.csv(paste0(workDir,"/samplesheet.csv"), header=T, stringsAsFactors = F)
 minAbund=10
-minSamples=nrow(samplesheet)
+minSamples=length(unique(samplesheet$sample))
 
 ## params for filtering -----
-outliers<-c("IPTG_1486_3_L2","IPTG_1486_3_L7") #NULL  # vector of outlier samples or NULL
+outliers<-NULL  # vector of outlier samples or NULL
 
 
 ## gtf - load to find protein coding genes
@@ -133,6 +133,7 @@ for (suf in suffixes) for (shrink in c(FALSE, TRUE)) {
     deseq2_shrink_lfc = shrink,
     filtering_min_abundance = minAbund,
     filtering_min_samples = minSamples,
+    exploratory_main_variable = "group",
     matrix = file.path(toCluster(workDir), "star_salmon",
                        paste0("salmon.merged.gene_counts", suf, ".tsv")),
     transcript_length_matrix = file.path(toCluster(workDir), "star_salmon",
@@ -185,6 +186,7 @@ if (length(outliers) > 0) {
       deseq2_shrink_lfc = shrink,
       filtering_min_abundance = minAbund,
       filtering_min_samples = minSamples,
+      exploratory_main_variable = "group",
       matrix = file.path(toCluster(workDir), "star_salmon",
                        paste0("salmon.merged.gene_counts", suf, ".tsv")),
       transcript_length_matrix = file.path(toCluster(workDir), "star_salmon",

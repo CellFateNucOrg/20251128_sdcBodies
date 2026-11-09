@@ -13,10 +13,10 @@ library(yaml)
 serverPath="/Volumes/meister.data"
 #serverPath="Z:/MeisterLab"
 
-workDir=paste0(serverPath,"/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1")
+workDir=paste0(serverPath,"/sinem/sequencing/20251118_Sinem_sdcBodies")
 
 setwd(workDir)
-outliers<-c("IPTG_1486_3_L2","IPTG_1486_3_L7")
+outliers<-NULL
 # which paramsheet goes with which contrasts file (relative to workDir); the contrasts file
 # can be the csv or the pipeline YAML (e.g. with formula contrasts)
 runSets <- list(

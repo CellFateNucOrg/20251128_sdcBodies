@@ -27,7 +27,7 @@ theme_set(
 serverPath <- "/Volumes/meister.data"
 #serverPath <- "Z:/MeisterLab"
 
-workDir <- paste0(serverPath, "/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1")
+workDir <- paste0(serverPath, "/sinem/sequencing/20251118_Sinem_sdcBodies")
 setwd(workDir)
 
 source(file.path(workDir, "scripts/functions_exploratory_analysis.R"))   # tableToGranges()
@@ -36,10 +36,10 @@ source(file.path(workDir, "scripts/functions_lfc_feature_plots.R"))
 # y axis limits: defaults for all runs, which a run set below can override
 ylimitsShrink   <- c(-1, 1)   # LFC plots of runs with LFC shrinkage
 ylimitsNoShrink <- c(-2, 2)   # ... and of runs without shrinkage ("noShrink" in runName)
-ylimitsMAD      <- c(-2, 2)   # MAD-scaled binned plots (LFC / MAD)
+ylimitsMAD      <- c(-3, 3)   # MAD-scaled binned plots (LFC / MAD)
 madChroms       <- c("chrI")  # chromosomes that also get a binned plot of LFC / MAD of each contrast (NULL = none)
 
-outliers <- c("IPTG_1486_3_L2", "IPTG_1486_3_L7")   # outlier samples, or NULL (then no noOut runs)
+outliers <- NULL   # outlier samples, or NULL (then no noOut runs)
 
 # which paramsheet goes with which contrasts file and samplesheet (relative to workDir).
 # Contrasts can be the csv or a YAML with formula contrasts; the samplesheet is used for the

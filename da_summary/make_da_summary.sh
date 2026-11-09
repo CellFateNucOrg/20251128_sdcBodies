@@ -5,12 +5,12 @@
 
 
 
-WORK_DIR=/mnt/meister.data/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1
+WORK_DIR=/mnt/meister.data/sinem/sequencing/20251118_Sinem_sdcBodies
 RESULTS_DIR=$WORK_DIR/diffabund
 
 
-PARAMFILES=( $WORK_DIR/params.yml $WORK_DIR/params_raptor.yml )
-removeOutliers=true
+PARAMFILES=( ../params.yml ../params_raptor.yml )
+removeOutliers=false
 if $removeOutliers; then
  PARAMFILES=( ../params.yml ../params_raptor.yml ../params_noOut.yml ../params_raptor_noOut.yml)
 fi

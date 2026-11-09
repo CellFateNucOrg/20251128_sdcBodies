@@ -25,17 +25,17 @@ theme_set(
 
 serverPath="/Volumes/meister.data"
 #serverPath="Z:/MeisterLab"
-workDir=paste0(serverPath,"/kalyan/sequencing/20261028_kg_ill_rna_l3_wPM1486_autosomal_smc1")
+workDir=paste0(serverPath,"/sinem/sequencing/20251118_Sinem_sdcBodies")
 
 contrasts<-read.csv(paste0(workDir,"/contrasts.csv"),sep=",",header=T)
 samplesheet <- read.csv(file.path(workDir, "samplesheet.csv"),header=T)
 minAbund=10
-minSamples=nrow(samplesheet)
-outliers<-c("IPTG_1486_3_L2","IPTG_1486_3_L7") #NULL  # vector of outlier samples or NULL
+minSamples=length(unique(samplesheet$sample))
+outliers<-NULL  # vector of outlier samples or NULL
 
 # age estimation parameters:
-prior=17.5 #NULL # expected age in hours (at 20C) - try 27-28 since we grow at 22C, or look at plots with NULL first
-prior.params=10 #NULL # wide SD, usually i use 10 to help confine it to same larval stage, but not bias it too much. use NULL for initial plot
+prior=25 # expected age in hours (at 20C) - try 27-28 since we grow at 22C, or look at plots with NULL first
+prior.params=10 # wide SD, usually i use 10 to help confine it to same larval stage, but not bias it too much. use NULL for initial plot
 refName<-"Cel_larval" # could also try "Cel_larv_YA" - seems better age estimation with NULL prior, but worse corelation overall.
 
 runName=paste0("01_noShrink_minAbund",minAbund,"_minSamples",minSamples)
@@ -131,7 +131,7 @@ dev.off()
 # plot full correlation
 pdf(paste0(workDir,"/diffabund/custom/raptor/",runName,"/",refName,"_prior",prior,"_full_age_correlations.pdf"),width=9,height=6)
 par(mfrow=c(2,3))
-pages <- split(seq_len(nrow(samplesheet)), ceiling(seq_len(nrow(samplesheet)) / 6))
+pages <- split(seq_len(length(unique(samplesheet$sample))), ceiling(seq_len(length(unique(samplesheet$sample)) / 6)))
 for (s in pages) plot_cor(ae_X, subset = s)
 dev.off()
 par(mfrow=c(1,1))

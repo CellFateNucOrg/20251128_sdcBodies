@@ -14,9 +14,9 @@ genomeDir=/mnt/meister.data/publicData/genomes/${genomeVer}
 genomeFile=${genomeDir}/c_elegans.PRJNA13758.${genomeVer}.genomic.fa
 gtfFile=${genomeDir}/c_elegans.PRJNA13758.${genomeVer}.canonical_geneset.gtf
 
-WORK_DIR=/mnt/meister.data/sinem/20261028_se_ill_rna_l3_wPM1556_autosomal_bmm1
+WORK_DIR=/mnt/meister.data/sinem/sequencing/20251118_Sinem_sdcBodies/
 CONFIG_FILE=/mnt/meister.data/nf-core/unibe_izb_apptainer.config
 
 
-nextflow run nf-core/rnaseq -profile apptainer -r 3.27.0 --input ${WORK_DIR}/fileList.csv --multiqc_title multiqc_rnaseq --outdir $WORK_DIR -c $CONFIG_FILE --fasta $genomeFile --gtf $gtfFile -resume
+nextflow run nf-core/rnaseq -profile apptainer -r 3.27.0 --input ${WORK_DIR}/samplesheet.csv --multiqc_title multiqc_rnaseq --outdir $WORK_DIR -c $CONFIG_FILE --fasta $genomeFile --gtf $gtfFile 
 
